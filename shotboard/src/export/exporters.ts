@@ -32,7 +32,8 @@ export function frameSize(width: number): { width: number; height: number } {
   return { width: even(width), height: even(width / aspect) }
 }
 
-const safeName = (s: string) => s.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'ShotBoard'
+// Plain ASCII-safe names: Chromium drops a download's name if it contains some characters (e.g. an en dash).
+const safeName = (s: string) => s.replace(/[\\/:*?"<>|\u2013\u2014]+/g, '-').trim() || 'ShotBoard'
 
 async function sidecar(): Promise<{ url: string; token: string }> {
   const info: SidecarInfo = await platform.sidecar()
@@ -126,7 +127,7 @@ export function exportPdf(layout: 'storyboard' | 'list', pageSize: 'letter' | 'a
     const r = await call(info, '/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     const pdf = new Uint8Array(await r.arrayBuffer())
     setProgress('Saving', 1)
-    return platform.saveExport(pdf, `${safeName(project.title)} – shot list.pdf`, 'pdf')
+    return platform.saveExport(pdf, `${safeName(project.title)} - shot list.pdf`, 'pdf')
   })
 }
 
@@ -154,7 +155,7 @@ export function exportStills(width: number): Promise<string | null> {
     })
     setProgress('Packing', 0.95)
     const data = await zip.generateAsync({ type: 'uint8array', compression: 'STORE' })
-    return platform.saveExport(data, `${safeName(project.title)} – stills.zip`, 'zip')
+    return platform.saveExport(data, `${safeName(project.title)} - stills.zip`, 'zip')
   })
 }
 
@@ -213,7 +214,7 @@ export function exportAnimatic(width: number, burnIn: boolean): Promise<string |
       }
       const mp4 = new Uint8Array(await (await call(info, `/jobs/${job.id}/file`)).arrayBuffer())
       setProgress('Saving', 1)
-      return platform.saveExport(mp4, `${safeName(project.title)} – animatic.mp4`, 'mp4')
+      return platform.saveExport(mp4, `${safeName(project.title)} - animatic.mp4`, 'mp4')
     } finally {
       // Clean up the helper's temp files whether we finished, failed or were cancelled.
       await call(info, `/jobs/${job.id}`, { method: 'DELETE' }).catch(() => {})

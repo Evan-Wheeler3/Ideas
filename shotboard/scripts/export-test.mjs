@@ -45,14 +45,14 @@ try {
   }
 
   const pdfName = await grab('Export PDF', 'shotlist.pdf')
-  check(pdfName === 'Diner Scene – shot list.pdf', `PDF file name (${pdfName})`)
+  check(pdfName === 'Diner Scene - shot list.pdf', `PDF file name (${pdfName})`)
   const pdfInfo = execFileSync('pdfinfo', [`${OUT}/shotlist.pdf`]).toString()
   check(/Pages:\s+1/.test(pdfInfo) && /Title:\s+Diner Scene/.test(pdfInfo), 'PDF has one storyboard page titled with the project')
 
   const zipName = await grab('Export stills', 'stills.zip')
   const zip = await JSZip.loadAsync(readFileSync(`${OUT}/stills.zip`))
   const pngs = Object.keys(zip.files).filter((f) => f.endsWith('.png'))
-  check(zipName === 'Diner Scene – stills.zip' && pngs.length === 6, `stills zip has one PNG per shot (${pngs.length})`)
+  check(zipName === 'Diner Scene - stills.zip' && pngs.length === 6, `stills zip has one PNG per shot (${pngs.length})`)
 
   // Keep the animatic short for software rendering: 0.5 s per shot.
   await page.evaluate(() => {
@@ -65,7 +65,7 @@ try {
     execFileSync('ffprobe', ['-v', 'error', '-count_frames', '-show_entries', 'stream=nb_read_frames,width,height:format=duration', '-of', 'json', `${OUT}/animatic.mp4`]).toString()
   )
   const st = probe.streams[0]
-  check(mp4Name === 'Diner Scene – animatic.mp4', `MP4 file name (${mp4Name})`)
+  check(mp4Name === 'Diner Scene - animatic.mp4', `MP4 file name (${mp4Name})`)
   check(Number(st.nb_read_frames) === 72, `MP4 has every frame: 6 shots × 0.5 s × 24 fps = 72 (got ${st.nb_read_frames})`)
   check(Math.abs(Number(probe.format.duration) - 3) < 1 / 24, `MP4 length matches the shots (${probe.format.duration}s)`)
   check(st.width === 960 && st.height === 402, `MP4 size (${st.width}×${st.height})`)
