@@ -34,7 +34,10 @@ export type ShotType = 'WS' | 'FS' | 'MS' | 'MCU' | 'CU' | 'ECU' | 'OTS' | 'POV'
 
 export interface Shot {
   id: string
+  /** Shown shot number, e.g. "4" or "12A". Kept in sync with list order unless numberLocked. */
   number: string
+  /** The user typed their own number; renumbering leaves it alone. */
+  numberLocked: boolean
   type: ShotType
   duration: number
   notes: string
@@ -42,7 +45,6 @@ export interface Shot {
   scene: Scene
   camera: Camera
   keys: CameraKey[]
-  thumbnail?: string
 }
 
 export type EnvironmentPreset = 'studio' | 'day' | 'sunset' | 'night'

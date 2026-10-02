@@ -5,7 +5,7 @@ import { TransformControls } from '@react-three/drei'
 import type { Vec3 } from '../shared/types'
 import { useStore, type GizmoMode } from '../store/store'
 
-const round = (n: number, digits = 4): number => Math.round(n * 10 ** digits) / 10 ** digits
+const round = (n: number, digits = 4): number => Math.round(n * 10 ** digits) / 10 ** digits + 0 // + 0: no -0
 
 /** Read a node's transform back as stored values (degrees for rotation). */
 export function readTransform(o: Object3D): { position: Vec3; rotation: Vec3; scale: Vec3 } {

@@ -13,6 +13,7 @@ const clone = <T>(v: T): T => structuredClone(v)
 export function addObject(shotId: string, obj: SceneObject, index?: number): Command {
   return {
     label: `Add ${obj.name}`,
+    shotId,
     do: (p) => {
       const list = shotOf(p, shotId).scene.objects
       list.splice(index ?? list.length, 0, clone(obj))
@@ -33,6 +34,7 @@ export function deleteObjects(shotId: string, objects: SceneObject[], allObjects
     .sort((a, b) => a.index - b.index)
   return {
     label: removed.length === 1 ? `Delete ${removed[0].obj.name}` : `Delete ${removed.length} objects`,
+    shotId,
     do: (p) => {
       const ids = new Set(removed.map((r) => r.obj.id))
       const shot = shotOf(p, shotId)
@@ -68,6 +70,7 @@ export function updateObject(
   return {
     label,
     after,
+    shotId,
     mergeKey,
     do: apply(after),
     undo: apply(before),

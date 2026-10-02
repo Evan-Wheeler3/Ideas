@@ -6,6 +6,8 @@ import { updateCamera } from '../commands/project'
 import { APERTURE_PRESETS, FOCAL_PRESETS, SENSORS, depthOfField, fieldOfView, formatDistance } from '../camera/lens'
 import { JOINT_LABELS, POSE_LABELS, clonePose } from '../shared/poses'
 import { cameraFromView, focusOn } from '../store/actions'
+import { CustomFieldInput, TypeSelect, setShotDuration, setShotNotes } from './shotFields'
+import { EditableText } from './EditableText'
 import { CAMERA_ID, useActiveShot, useSelectedObjects, useStore } from '../store/store'
 import { CAMERA_COLOR } from '../scene/colors'
 import { NumberField } from './NumberField'
@@ -212,6 +214,32 @@ function CameraProperties() {
   )
 }
 
+/* ---------------- Shot ---------------- */
+
+function ShotProperties() {
+  const shot = useActiveShot()
+  const columns = useStore((s) => s.project.shotColumns).filter((c) => c.kind !== 'builtin' && c.visible)
+  return (
+    <Section title={`Shot ${shot.number}`}>
+      <Row label="Type">
+        <TypeSelect shot={shot} />
+      </Row>
+      <Row label="Duration">
+        <NumberField label="s" value={shot.duration} step={0.1} precision={1} min={0.1} max={600} onChange={(v) => setShotDuration(shot, v)} />
+      </Row>
+      <div className="prop-stack">
+        <div className="prop-label">Notes</div>
+        <EditableText multiline value={shot.notes} placeholder="Action, dialogue, intent…" onCommit={(t) => setShotNotes(shot, t)} />
+      </div>
+      {columns.map((c) => (
+        <Row key={c.id} label={c.label}>
+          <CustomFieldInput shot={shot} col={c} />
+        </Row>
+      ))}
+    </Section>
+  )
+}
+
 /* ---------------- Objects ---------------- */
 
 function PersonProperties({ obj, edit }: { obj: SceneObject; edit(after: ObjectPatch, label: string, mergeable?: boolean): void }) {
@@ -348,6 +376,7 @@ export function PropertiesPanel() {
 
   return (
     <Panel title="Properties">
+      {selection.length === 0 && <ShotProperties />}
       {showCamera && <CameraProperties />}
       {!showCamera && primary && selected.length > 1 && (
         <div className="hint">{selected.length} objects selected. Editing {primary.name}.</div>

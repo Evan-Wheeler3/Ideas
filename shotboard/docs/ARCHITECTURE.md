@@ -14,7 +14,7 @@ ShotBoard is a **storyboard and shot list tool** with a simple 3D stage. You pla
 |---|---|
 | App shell | **Electron**. It looks and renders the same on Mac, Windows and Linux. |
 | Shots | **Each shot is its own frame.** It holds its own copy of the scene, so moving a table in shot 2 does not change shot 1. "New shot" copies the current one. |
-| Project file | **One file**, `MyFilm.shotboard`. Under the hood it's a zip holding `project.json`, thumbnails and imported models. Autosave writes a copy next to it. The previous save is kept as `.bak`. |
+| Project file | **One file**, `MyFilm.shotboard`. Under the hood it's a zip holding `project.json`, thumbnails and imported models. Autosave keeps a copy in the app's own data folder for crash recovery. The previous save is kept as `.bak`. |
 | Mannequin | **A blocky figure built in code.** It has pose presets (stand, sit, walk, run, point) and its head, arms and legs can be rotated with the normal rotate tool. No IK. |
 | Panels | Fixed layout with draggable dividers. No floating or tabbed docking. |
 | Shot list | **Configurable**: custom columns, show/hide/reorder columns, list view or storyboard grid view. |
@@ -73,6 +73,7 @@ interface ColumnDef {
 interface Shot {
   id: string;
   number: string;                // auto "1", "2"... editable ("12A")
+  numberLocked: boolean;         // true once the user typed their own number
   type: 'WS' | 'FS' | 'MS' | 'MCU' | 'CU' | 'ECU' | 'OTS' | 'POV' | 'INSERT' | 'OTHER';
   duration: number;              // seconds
   notes: string;
@@ -80,7 +81,6 @@ interface Shot {
   scene: Scene;
   camera: Camera;
   keys: CameraKey[];             // empty = static shot
-  thumbnail?: string;            // file name inside project zip
 }
 
 interface Scene {

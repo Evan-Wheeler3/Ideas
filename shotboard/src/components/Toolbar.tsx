@@ -1,6 +1,52 @@
-import type { ReactNode } from 'react'
-import { Clapperboard, Globe, Magnet, Move3d, Redo2, Rotate3d, Scale3d, Undo2, Box as BoxIcon } from 'lucide-react'
+import { useRef, useState, type ReactNode } from 'react'
+import {
+  Clapperboard, ChevronDown, FilePlus2, FolderOpen, Globe, Magnet, Move3d, Redo2, Rotate3d, Save, Scale3d, Sparkles, Undo2,
+  Box as BoxIcon
+} from 'lucide-react'
 import { useDirty, useStore, type GizmoMode } from '../store/store'
+import { newProject, openProject, openSampleProject, saveProject } from '../persist/fileActions'
+import { renameProject } from '../commands/shots'
+import { EditableText } from './EditableText'
+import { Popover } from './Popover'
+
+const MOD = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl+'
+
+function FileMenu() {
+  const [open, setOpen] = useState(false)
+  const btn = useRef<HTMLButtonElement>(null)
+
+  const item = (icon: ReactNode, label: string, keys: string, action: () => unknown) => (
+    <button
+      className="menu-item"
+      onClick={() => {
+        setOpen(false)
+        void action()
+      }}
+    >
+      {icon}
+      <span>{label}</span>
+      <kbd>{keys}</kbd>
+    </button>
+  )
+
+  return (
+    <>
+      <button ref={btn} className={`file-btn${open ? ' on' : ''}`} onClick={() => setOpen((o) => !o)}>
+        File <ChevronDown size={13} />
+      </button>
+      {open && (
+        <Popover anchor={btn} onClose={() => setOpen(false)} className="file-menu">
+          {item(<FilePlus2 size={14} />, 'New project', `${MOD}N`, newProject)}
+          {item(<FolderOpen size={14} />, 'Open…', `${MOD}O`, openProject)}
+          {item(<Sparkles size={14} />, 'Open sample project', '', openSampleProject)}
+          <div className="menu-sep" />
+          {item(<Save size={14} />, 'Save', `${MOD}S`, () => saveProject())}
+          {item(<Save size={14} />, 'Save as…', `${MOD}Shift+S`, () => saveProject(true))}
+        </Popover>
+      )}
+    </>
+  )
+}
 
 function ToolButton({
   active,
@@ -30,6 +76,7 @@ const GIZMOS: { mode: GizmoMode; icon: typeof Move3d; title: string }[] = [
 
 export function Toolbar() {
   const title = useStore((s) => s.project.title)
+  const run = useStore((s) => s.run)
   const dirty = useDirty()
   const gizmo = useStore((s) => s.gizmo)
   const setGizmo = useStore((s) => s.setGizmo)
@@ -51,8 +98,14 @@ export function Toolbar() {
         <Clapperboard size={18} />
         <span>ShotBoard</span>
       </div>
+      <FileMenu />
       <div className="doc-title">
-        {title}
+        <EditableText
+          className="title-input"
+          value={title}
+          title="Project title (shown on exports). Click to rename."
+          onCommit={(t) => t.trim() && run(renameProject(title, t.trim()))}
+        />
         {dirty && <span className="dirty-dot" title="Unsaved changes" />}
       </div>
 

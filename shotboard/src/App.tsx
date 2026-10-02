@@ -3,7 +3,10 @@ import { Toolbar } from './components/Toolbar'
 import { ScenePanel } from './components/ScenePanel'
 import { AddPanel } from './components/AddPanel'
 import { PropertiesPanel } from './components/PropertiesPanel'
-import { ShotStrip } from './components/ShotStrip'
+import { ShotsPanel } from './components/ShotsPanel'
+import { DialogHost } from './components/Dialogs'
+import { ThumbnailRenderer } from './scene/ThumbnailRenderer'
+import { useProjectLifecycle } from './persist/fileActions'
 import { Viewport } from './scene/Viewport'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useKeyboardShortcuts } from './keymap'
@@ -20,7 +23,7 @@ function StatusBar() {
       <span>{viewMode === 'camera' ? 'Camera view' : 'Editor view'}</span>
       <span className="spacer" />
       <span className="dim">
-        <kbd>C</kbd> camera view · <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> move/rotate/scale · <kbd>F</kbd> frame · <kbd>L</kbd> labels ·{' '}
+        <kbd>N</kbd> new shot · <kbd>[</kbd> <kbd>]</kbd> prev/next shot · <kbd>C</kbd> camera view · <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> move/rotate/scale · <kbd>F</kbd> frame · <kbd>L</kbd> labels ·{' '}
         <kbd>X</kbd> snap · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Del</kbd> delete
       </span>
     </footer>
@@ -29,6 +32,7 @@ function StatusBar() {
 
 export function App() {
   useKeyboardShortcuts()
+  useProjectLifecycle()
 
   return (
     <div className="app">
@@ -71,11 +75,13 @@ export function App() {
           </Group>
         </Panel>
         <Separator className="resize-handle horizontal" />
-        <Panel defaultSize="190px" minSize="120px" maxSize="50%">
-          <ShotStrip />
+        <Panel defaultSize="236px" minSize="140px" maxSize="60%">
+          <ShotsPanel />
         </Panel>
       </Group>
       <StatusBar />
+      <ThumbnailRenderer />
+      <DialogHost />
     </div>
   )
 }

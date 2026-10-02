@@ -2,9 +2,10 @@
 // checks the main features work, and saves screenshots to test-output/.
 import { spawn } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
+mkdirSync('samples', { recursive: true })
 import { chromium } from 'playwright-core'
 
-const URL = 'http://localhost:5199/'
+const URL = 'http://localhost:5199/?autosaveMs=1500'
 const OUT = 'test-output'
 mkdirSync(OUT, { recursive: true })
 
@@ -71,6 +72,8 @@ try {
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
   page.on('response', (r) => r.status() >= 400 && errors.push(`${r.status()} ${r.url()}`))
+  // Leaving with unsaved changes asks "are you sure?"; accept so reloads go through.
+  page.on('dialog', (d) => d.accept())
 
   await page.goto(URL)
   await page.waitForSelector('canvas')
@@ -233,6 +236,136 @@ try {
   await page.keyboard.press('Escape')
   await page.waitForTimeout(500)
   await page.screenshot({ path: `${OUT}/m2-editor.png` })
+
+
+  // ---- Milestone 3: shots ----
+  const cards = page.locator('.shot-card:not(.add-card)')
+  const cardLens = (i) => cards.nth(i).locator('.shot-meta .mono').textContent()
+  check((await cards.count()) === 1, 'project starts with one shot')
+  await page.waitForSelector('.shot-card img', { timeout: 20000 })
+  check(true, 'shot thumbnail renders from the shot camera')
+
+  await page.keyboard.press('n')
+  check((await cards.count()) === 2, 'N adds a shot')
+  check((await page.locator('.shot-card.active .shot-badge').textContent()) === '2', 'the new shot becomes the current shot')
+  const lens1 = await cardLens(0)
+  await page.locator('.chip', { hasText: /^85$/ }).click()
+  check((await cardLens(1)).startsWith('85mm') && (await cardLens(0)) === lens1, 'shots are independent (changing shot 2 leaves shot 1 alone)')
+  const thumb2Before = await cards.nth(1).locator('img').getAttribute('src')
+  await page.waitForFunction(
+    (before) => document.querySelectorAll('.shot-card:not(.add-card)')[1]?.querySelector('img')?.getAttribute('src') !== before,
+    thumb2Before,
+    { timeout: 20000 }
+  )
+  check(true, 'thumbnail refreshes after the shot changes')
+
+  await cards.nth(0).hover()
+  await cards.nth(0).locator('[title="Duplicate shot"]').click()
+  check((await cards.count()) === 3, 'duplicate shot')
+  const badges = async () => (await page.locator('.shot-badge').allTextContents()).join(',')
+  check((await badges()) === '1,2,3', `shots are numbered in order (${await badges()})`)
+  await cards.nth(2).hover()
+  await cards.nth(2).locator('[title="Delete shot"]').click()
+  check((await cards.count()) === 2, 'delete shot')
+  await page.keyboard.press('Control+z')
+  check((await cards.count()) === 3, 'undo brings the deleted shot back')
+
+  // Drag the last shot to the front.
+  const lastLens = await cardLens(2)
+  await cards.nth(2).dragTo(cards.nth(0), { targetPosition: { x: 10, y: 40 } })
+  check((await cardLens(0)) === lastLens && (await badges()) === '1,2,3', 'drag to reorder (numbers follow the new order)')
+
+  await page.locator('.shot-card').nth(0).click()
+  await page.keyboard.press(']')
+  check((await page.locator('.shot-card.active .shot-badge').textContent()) === '2', '] goes to the next shot')
+  await page.keyboard.press('[')
+  check((await page.locator('.shot-card.active .shot-badge').textContent()) === '1', '[ goes to the previous shot')
+
+  // Shot details in Properties (nothing selected).
+  await page.keyboard.press('Escape')
+  const notes = page.locator('.prop-stack textarea')
+  await notes.fill('Anna waits by the window.')
+  await notes.blur()
+  check((await cards.nth(0).locator('.shot-notes').textContent()) === 'Anna waits by the window.', 'notes typed in Properties show on the card')
+
+  // List view, custom column, custom number.
+  await page.locator('[title="Shot list table"]').click()
+  const rowsT = page.locator('.shot-row:not(.head)')
+  check((await rowsT.count()) === 3, 'list view shows every shot')
+  await page.getByRole('button', { name: 'Columns', exact: true }).click()
+  await page.locator('.columns-menu input[placeholder^="Name"]').fill('Location')
+  await page.locator('.columns-menu').getByRole('button', { name: 'Add column' }).click()
+  await page.getByRole('button', { name: 'Columns', exact: true }).click()
+  check(await page.locator('.shot-row.head', { hasText: 'Location' }).count() === 1, 'adding a column shows it in the table')
+  const locCell = rowsT.nth(1).locator('.cell').last().locator('input')
+  await locCell.fill('INT. DINER')
+  await locCell.press('Enter')
+  const numCell = rowsT.nth(2).locator('.num-input')
+  await numCell.fill('2A')
+  await numCell.press('Enter')
+  check((await rowsT.nth(2).locator('.num-input').inputValue()) === '2A', 'shots can be given their own number')
+
+  // Undo of an edit on another shot jumps back to that shot.
+  await rowsT.nth(0).locator('.drag-handle').click()
+  await page.keyboard.press('Control+z')
+  check((await rowsT.nth(2).locator('.num-input').inputValue()) === '3', 'undo reverts the number')
+  check((await page.locator('.shot-row.active .num-input').inputValue()) === '3', 'undo switches to the shot it changed')
+  await page.keyboard.press('Control+Shift+z')
+  await page.screenshot({ path: `${OUT}/m3-list.png` })
+  await page.locator('[title="Storyboard grid"]').click()
+
+  // ---- Saving and opening ----
+  const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Control+s')])
+  const savedPath = `${OUT}/smoke.shotboard`
+  await download.saveAs(savedPath)
+  check(download.suggestedFilename() === 'Untitled.shotboard', `Ctrl+S saves a .shotboard file (${download.suggestedFilename()})`)
+  check(await page.locator('.dirty-dot').count() === 0, 'saving clears the unsaved-changes dot')
+
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Sphere', exact: true }).click()
+  await page.locator('.file-btn').click()
+  await page.locator('.menu-item', { hasText: 'Open…' }).click()
+  check(await page.locator('.modal', { hasText: 'Unsaved changes' }).isVisible(), 'opening with unsaved changes asks first')
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.locator('.modal .btn.primary').click()])
+  await chooser.setFiles(savedPath)
+  await page.waitForSelector('.toast', { hasText: 'Opened' })
+  check((await cards.count()) === 3, 'the saved project opens with all its shots')
+  check(await page.locator('.tree-row', { hasText: 'Sphere' }).count() === 0, 'unsaved changes were discarded')
+  check((await page.locator('.shot-card img').count()) === 3, 'thumbnails are stored in the file')
+  check((await page.locator('.shot-badge').allTextContents()).includes('2A'), 'custom shot numbers are saved')
+
+  // ---- Sample project ----
+  await page.locator('.file-btn').click()
+  await page.locator('.menu-item', { hasText: 'Open sample project' }).click()
+  check((await cards.count()) === 6, 'sample project has 6 shots')
+  await page.waitForFunction(() => document.querySelectorAll('.shot-card img').length === 6, null, { timeout: 60000 })
+  check(true, 'thumbnails render for every shot, not just the current one')
+  await page.keyboard.press('c')
+  await page.locator('.shot-card').nth(3).click()
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/m3-sample.png` })
+  await page.keyboard.press('c')
+  const [sampleDl] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Control+s')])
+  await sampleDl.saveAs('samples/Diner-Scene.shotboard')
+
+  // ---- Autosave and recovery ----
+  const title = page.locator('.title-input')
+  await title.fill('Autosave test')
+  await title.press('Enter')
+  await page.waitForTimeout(3500)
+  await page.reload()
+  await page.waitForSelector('.modal', { timeout: 10000 })
+  check(await page.locator('.modal', { hasText: 'Recover unsaved work' }).isVisible(), 'after a crash/reload, recovery is offered')
+  await page.locator('.modal .btn.primary').click()
+  await page.waitForTimeout(500)
+  check((await title.inputValue()) === 'Autosave test', 'recovering brings back the unsaved work')
+  check((await cards.count()) === 6, 'recovered project has all its shots')
+  check(await page.locator('.dirty-dot').count() === 1, 'recovered work is marked unsaved')
+
+  await page.locator('.file-btn').click()
+  await page.locator('.menu-item', { hasText: 'New project' }).click()
+  await page.locator('.modal .btn.primary').click()
+  check((await cards.count()) === 1 && (await page.locator('.tree-row', { hasText: 'Person' }).count()) === 1, 'New project starts a clean stage')
 
   check(errors.length === 0, `no console errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
   await browser.close()

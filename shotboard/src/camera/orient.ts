@@ -2,7 +2,8 @@ import { Euler, Matrix4, Quaternion, Vector3, MathUtils } from 'three'
 import type { Vec3 } from '../shared/types'
 
 const UP = new Vector3(0, 1, 0)
-const round = (n: number) => Math.round(n * 100) / 100
+// "+ 0" turns -0 into 0, so saved files and comparisons stay clean.
+const round = (n: number) => Math.round(n * 100) / 100 + 0
 
 /** Camera rotation (degrees, YXZ) that looks from `from` toward `to`, with no roll. */
 export function lookAtRotation(from: Vec3, to: Vec3): Vec3 {

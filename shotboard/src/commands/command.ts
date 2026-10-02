@@ -4,6 +4,8 @@ import type { Project } from '../shared/types'
 /** An undoable change to the project. Only commands may change the project. */
 export interface Command {
   readonly label: string
+  /** The shot this command changes, if it's about one shot. Undo/redo switch to it. */
+  readonly shotId?: string
   do(p: Draft<Project>): void
   undo(p: Draft<Project>): void
   /** Commands with the same key, run close together, collapse into one undo step. */
@@ -71,6 +73,7 @@ export const isDirty = (h: HistoryState): boolean => h.savedAt !== h.past.length
 export function composite(label: string, cmds: Command[]): Command {
   return {
     label,
+    shotId: cmds.every((c) => c.shotId === cmds[0]?.shotId) ? cmds[0]?.shotId : undefined,
     do: (p) => cmds.forEach((c) => c.do(p)),
     undo: (p) => [...cmds].reverse().forEach((c) => c.undo(p))
   }

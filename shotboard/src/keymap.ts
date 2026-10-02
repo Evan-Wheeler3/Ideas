@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { useStore } from './store/store'
 import { deleteSelection, duplicateSelection } from './store/actions'
+import { newShot, stepShot } from './store/shotActions'
+import { newProject, openProject, saveProject } from './persist/fileActions'
 
 interface Shortcut {
   /** e.g. "w", "mod+z", "mod+shift+z", "delete" */
@@ -29,6 +31,13 @@ const SHORTCUTS: Shortcut[] = [
   },
   { keys: ['delete', 'backspace'], run: deleteSelection },
   { keys: ['mod+d'], run: duplicateSelection },
+  { keys: ['n'], run: newShot },
+  { keys: ['['], run: () => stepShot(-1) },
+  { keys: [']'], run: () => stepShot(1) },
+  { keys: ['mod+s'], run: () => void saveProject() },
+  { keys: ['mod+shift+s'], run: () => void saveProject(true) },
+  { keys: ['mod+o'], run: () => void openProject() },
+  { keys: ['mod+n'], run: () => void newProject() },
   { keys: ['mod+z'], run: () => useStore.getState().undo() },
   { keys: ['mod+shift+z', 'mod+y'], run: () => useStore.getState().redo() }
 ]

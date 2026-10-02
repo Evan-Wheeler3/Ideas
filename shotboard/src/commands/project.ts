@@ -26,6 +26,7 @@ export function updateCamera(
   return {
     label,
     after,
+    shotId,
     mergeKey,
     do: (p) => void Object.assign(shotOf(p, shotId).camera, clone(after)),
     undo: (p) => void Object.assign(shotOf(p, shotId).camera, clone(before)),

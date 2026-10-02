@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Box3, MathUtils, PCFShadowMap, Vector3, type Object3D, type PerspectiveCamera } from 'three'
 import { Canvas, useThree } from '@react-three/fiber'
-import { Environment, GizmoHelper, GizmoViewport, Grid, Lightformer, OrbitControls } from '@react-three/drei'
+import { GizmoHelper, GizmoViewport, Grid, OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { DepthOfField, EffectComposer, Outline, Selection, SMAA } from '@react-three/postprocessing'
 import type { AspectRatio, Camera, JointName, Vec3 } from '../shared/types'
@@ -18,39 +18,12 @@ import { CameraRig } from './CameraRig'
 import { Gizmo, gizmoState, readTransform } from './Gizmo'
 import { ShotCameraView, editorView } from './ShotCameraView'
 import { ViewportOverlay } from './ViewportOverlay'
+import { StudioLighting } from './Lighting'
 import { LabelLayerContext } from './labelLayer'
 import { notePointerDown, wasDrag } from './clickGuard'
 
 const SELECT_COLOR_HEX = Number.parseInt(SELECT_COLOR.slice(1), 16)
 const SELECT_HIDDEN_HEX = 0x7a5312
-
-/** Neutral studio lighting for the editor. Real lighting setups arrive in milestone 5. */
-function StudioLighting() {
-  return (
-    <>
-      <hemisphereLight args={['#d8e0ff', '#2a2622', 0.45]} />
-      <directionalLight
-        position={[5, 8, 4]}
-        intensity={2.2}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-        shadow-bias={-0.0004}
-        shadow-normalBias={0.02}
-        shadow-radius={4}
-      />
-      {/* Procedural environment for soft reflections; no network needed. */}
-      <Environment resolution={256} frames={1}>
-        <Lightformer form="rect" intensity={2} position={[0, 5, -5]} scale={[10, 4, 1]} />
-        <Lightformer form="rect" intensity={0.8} position={[-6, 2, 2]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
-        <Lightformer form="rect" intensity={0.5} position={[6, 2, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
-      </Environment>
-    </>
-  )
-}
 
 /** Bounds of the given objects in world space. */
 function boundsOf(scene: Object3D, ids: string[]): Box3 {

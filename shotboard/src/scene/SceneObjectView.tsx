@@ -17,7 +17,7 @@ const DEG = MathUtils.DEG2RAD
 /** Name given to each object's root group, so the gizmo and framing can find it. */
 export const objectNodeName = (id: string): string => `obj:${id}`
 
-function Shape({ kind, color }: { kind: SceneObject['kind']; color: string }) {
+export function Shape({ kind, color }: { kind: SceneObject['kind']; color: string }) {
   const isPlane = kind === 'plane'
   return (
     <mesh castShadow={!isPlane} receiveShadow position={isPlane ? [0, -0.01, 0] : undefined}>
@@ -32,7 +32,7 @@ function Shape({ kind, color }: { kind: SceneObject['kind']; color: string }) {
   )
 }
 
-function ImportedModel({ url }: { url: string }) {
+export function ImportedModel({ url }: { url: string }) {
   const { scene } = useGLTF(url)
   const copy = useMemo(() => {
     const c = scene.clone(true)
@@ -47,7 +47,7 @@ function ImportedModel({ url }: { url: string }) {
   return <primitive object={copy} />
 }
 
-function MissingModel() {
+export function MissingModel() {
   return (
     <mesh position={[0, 0.5, 0]}>
       <boxGeometry args={[1, 1, 1]} />
@@ -56,7 +56,7 @@ function MissingModel() {
   )
 }
 
-const SHAPES = new Set(['box', 'sphere', 'cylinder', 'cone', 'plane'])
+export const SHAPES = new Set(['box', 'sphere', 'cylinder', 'cone', 'plane'])
 
 interface Props {
   obj: SceneObject

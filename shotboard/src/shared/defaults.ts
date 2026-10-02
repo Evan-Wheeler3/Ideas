@@ -58,6 +58,7 @@ export function makeShot(number: string): Shot {
   return {
     id: newId(),
     number,
+    numberLocked: false,
     type: 'WS',
     duration: 3,
     notes: '',
@@ -101,5 +102,15 @@ export function makeStarterProject(): Project {
   ]
   shot.camera = makeCamera([0.9, 1.45, 5.4], [0.4, 1.0, 0.2])
   shot.type = 'MS'
+  return p
+}
+
+/** "New project": an empty stage with one person and the camera on them. */
+export function makeBlankProject(): Project {
+  const p = makeProject('Untitled')
+  const shot = p.shots[0]
+  shot.scene.objects = [makeFromCatalog('floor', { scale: [12, 1, 12] }), makeFromCatalog('person', { name: 'Person' })]
+  shot.camera = makeCamera([0, 1.5, 4.5], [0, 1.1, 0])
+  shot.type = 'FS'
   return p
 }

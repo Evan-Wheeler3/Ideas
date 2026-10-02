@@ -24,9 +24,16 @@ export interface SnapSettings {
   scale: number
 }
 
+/** Where the open project lives on disk (Electron) or what it's called (browser). */
+export interface FileInfo {
+  path: string | null
+  name: string
+}
+
 interface State {
   project: Project
   history: HistoryState
+  file: FileInfo
   activeShotId: string
   selection: string[]
   gizmo: GizmoMode
@@ -44,6 +51,10 @@ interface State {
   run(cmd: Command): void
   undo(): void
   redo(): void
+  /** Replace the whole project (open, new, recover). Clears undo history. */
+  loadProject(project: Project, file: FileInfo, opts?: { dirty?: boolean }): void
+  markSaved(file: FileInfo): void
+  setActiveShot(id: string): void
   select(ids: string[]): void
   toggleSelect(id: string): void
   setGizmo(mode: GizmoMode): void
@@ -57,11 +68,35 @@ interface State {
   setHovered(id: string | null): void
 }
 
+/** Keep the active shot valid after the shot list changes (e.g. the active shot was deleted). */
+function resolveActive(prev: Project, next: Project, activeId: string, prefer?: string): string {
+  if (prefer && next.shots.some((s) => s.id === prefer)) return prefer
+  if (next.shots.some((s) => s.id === activeId)) return activeId
+  const oldIndex = Math.max(prev.shots.findIndex((s) => s.id === activeId), 0)
+  return next.shots[Math.min(oldIndex, next.shots.length - 1)]?.id ?? next.shots[0].id
+}
+
 export const useStore = create<State>((set, get) => {
   const initial = makeStarterProject()
+
+  /** Apply a history step, moving to the shot it touched so the change is visible. */
+  const applyStep = (r: { project: Project; history: HistoryState } | null, cmd: Command | undefined) => {
+    if (!r) return
+    const s = get()
+    const activeShotId = resolveActive(s.project, r.project, s.activeShotId, cmd?.shotId)
+    const switched = activeShotId !== s.activeShotId
+    set({
+      ...r,
+      activeShotId,
+      selection: switched ? [] : pruneSelection(r.project, activeShotId, s.selection),
+      joint: switched ? null : s.joint
+    })
+  }
+
   return {
     project: initial,
     history: emptyHistory(),
+    file: { path: null, name: 'Untitled' },
     activeShotId: initial.shots[0].id,
     selection: [],
     gizmo: 'translate',
@@ -74,14 +109,32 @@ export const useStore = create<State>((set, get) => {
     showLabels: true,
     hoveredId: null,
 
-    run: (cmd) => set((s) => execute(s.project, s.history, cmd)),
-    undo: () => {
-      const r = undo(get().project, get().history)
-      if (r) set({ ...r, selection: pruneSelection(r.project, get()) })
+    run: (cmd) => {
+      const s = get()
+      const r = execute(s.project, s.history, cmd)
+      const activeShotId = resolveActive(s.project, r.project, s.activeShotId)
+      set({ ...r, activeShotId, selection: pruneSelection(r.project, activeShotId, s.selection) })
     },
-    redo: () => {
-      const r = redo(get().project, get().history)
-      if (r) set({ ...r, selection: pruneSelection(r.project, get()) })
+    undo: () => applyStep(undo(get().project, get().history), get().history.past.at(-1)),
+    redo: () => applyStep(redo(get().project, get().history), get().history.future[0]),
+    loadProject: (project, file, opts) => {
+      const history = emptyHistory()
+      if (opts?.dirty) history.savedAt = -1
+      set({
+        project,
+        history,
+        file,
+        activeShotId: project.shots[0].id,
+        selection: [],
+        joint: null,
+        hoveredId: null,
+        viewMode: 'editor'
+      })
+    },
+    markSaved: (file) => set((s) => ({ file, history: { ...s.history, savedAt: s.history.past.length, lastAt: 0 } })),
+    setActiveShot: (id) => {
+      if (id === get().activeShotId) return
+      set({ activeShotId: id, selection: [], joint: null, hoveredId: null })
     },
     select: (ids) => set({ selection: ids, joint: null }),
     toggleSelect: (id) =>
@@ -102,11 +155,11 @@ export const useStore = create<State>((set, get) => {
   }
 })
 
-function pruneSelection(project: Project, s: State): string[] {
-  const shot = project.shots.find((x) => x.id === s.activeShotId)
+function pruneSelection(project: Project, activeShotId: string, selection: string[]): string[] {
+  const shot = project.shots.find((x) => x.id === activeShotId)
   const ids = new Set(shot?.scene.objects.map((o) => o.id))
   ids.add(CAMERA_ID)
-  return s.selection.filter((id) => ids.has(id))
+  return selection.filter((id) => ids.has(id))
 }
 
 // Selectors

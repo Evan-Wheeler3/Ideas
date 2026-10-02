@@ -10,6 +10,7 @@ import { updateCamera } from '../commands/project'
 import { lookAtRotation } from '../camera/orient'
 import { editorView } from '../scene/ShotCameraView'
 import { putAsset } from './assets'
+import { toast } from '../components/Dialogs'
 import { getActiveShot, useStore } from './store'
 
 const r2 = (n: number) => Math.round(n * 100) / 100
@@ -138,7 +139,7 @@ export async function importModelFiles(files: File[]): Promise<string[]> {
     run(composite(added.length === 1 ? `Import ${added[0].name}` : `Import ${added.length} models`, cmds))
     select(added.map((o) => o.id))
   }
-  if (errors.length) window.alert(`Some files couldn't be imported:\n\n${errors.join('\n')}`)
+  if (errors.length) toast(`Couldn't import: ${errors.join('; ')}`, 'error')
   return added.map((o) => o.id)
 }
 
