@@ -11,7 +11,7 @@ import { keyedPose } from '../camera/animate'
 import { useStore } from '../store/store'
 import { shotHash, useThumbs } from '../store/thumbs'
 import { assetUrl } from '../store/assets'
-import { StudioLighting } from './Lighting'
+import { LightSource, SceneEnvironment } from './Lighting'
 import { Mannequin } from './Mannequin'
 import { PropModel } from './Props'
 import { ImportedModel, MissingModel, SHAPES, Shape } from './SceneObjectView'
@@ -57,10 +57,8 @@ function Capture({ onDone }: { onDone(url: string): void }) {
 function ShotScene({ shot, aspect, onDone }: { shot: Shot; aspect: AspectRatio; onDone(url: string): void }) {
   return (
     <>
-      <color attach="background" args={[shot.scene.environment.color]} />
-      <fog attach="fog" args={[shot.scene.environment.color, 25, 70]} />
       <ShotCamera shot={shot} aspect={aspect} />
-      <StudioLighting />
+      <SceneEnvironment env={shot.scene.environment} />
       <Suspense fallback={null}>
         {shot.scene.objects
           .filter((o) => o.visible)
@@ -74,6 +72,7 @@ function ShotScene({ shot, aspect, onDone }: { shot: Shot; aspect: AspectRatio; 
                 )}
                 {o.kind === 'model' && (url ? <ImportedModel url={url} /> : <MissingModel />)}
                 {SHAPES.has(o.kind) && <Shape kind={o.kind} color={o.color} />}
+                {o.kind === 'light' && o.light && <LightSource obj={o} />}
               </group>
             )
           })}

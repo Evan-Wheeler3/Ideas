@@ -6,7 +6,7 @@ import { catalogItem, PERSON_COLORS } from '../shared/catalog'
 import type { SceneObject, Vec3 } from '../shared/types'
 import { composite, type Command } from '../commands/command'
 import { addObject, deleteObjects, duplicateObjects } from '../commands/objects'
-import { lookAtRotation } from '../camera/orient'
+import { aimRotation, lookAtRotation } from '../camera/orient'
 import { editorView } from '../scene/ShotCameraView'
 import { putAsset } from './assets'
 import { applyCameraChange, displayCamera } from './cameraActions'
@@ -35,6 +35,15 @@ export function addFromCatalog(key: string): void {
   const obj = makeFromCatalog(key)
   obj.position = [x, obj.position[1], z]
   obj.name = uniqueName(obj.name, shot.scene.objects)
+  if (obj.kind === 'light') {
+    // Put the light up and toward the viewer, aimed at the spot being looked at.
+    const target: Vec3 = [x, 1.1, z]
+    const toward = editorView.position.clone().sub(editorView.target).setY(0).normalize()
+    const up = obj.light?.type === 'directional' ? 6 : 2.4
+    const out = obj.light?.type === 'directional' ? 5 : 2.2
+    obj.position = [r2(x + toward.x * out + toward.z * 1.2), up, r2(z + toward.z * out - toward.x * 1.2)]
+    obj.rotation = aimRotation(obj.position, target)
+  }
   if (obj.kind === 'mannequin') {
     // Give each person their own shirt color so they're easy to tell apart.
     const people = shot.scene.objects.filter((o) => o.kind === 'mannequin').length

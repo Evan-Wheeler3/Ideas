@@ -8,6 +8,7 @@ import { cameraFromView, focusOn } from '../store/actions'
 import { applyCameraChange, useDisplayCamera } from '../store/cameraActions'
 import { CustomFieldInput, TypeSelect, setShotDuration, setShotNotes } from './shotFields'
 import { EditableText } from './EditableText'
+import { LightingProperties, LightProperties } from './LightingProperties'
 import { CAMERA_ID, useActiveShot, useSelectedObjects, useStore } from '../store/store'
 import { CAMERA_COLOR } from '../scene/colors'
 import { NumberField } from './NumberField'
@@ -342,21 +343,26 @@ function ObjectProperties({ obj }: { obj: SceneObject }) {
           onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
         />
       </div>
-      <Section title="Look">
-        <Row label="Color">
-          <div className="color-row">
-            <input type="color" value={obj.color} onChange={(e) => edit({ color: e.target.value }, `Color ${obj.name}`)} />
-            <span className="mono dim">{obj.color.toUpperCase()}</span>
-          </div>
-        </Row>
-      </Section>
+      {obj.kind === 'light' && obj.light ? (
+        <LightProperties obj={obj} />
+      ) : (
+        <Section title="Look">
+          <Row label="Color">
+            <div className="color-row">
+              <input type="color" value={obj.color} onChange={(e) => edit({ color: e.target.value }, `Color ${obj.name}`)} />
+              <span className="mono dim">{obj.color.toUpperCase()}</span>
+            </div>
+          </Row>
+        </Section>
+      )}
       {obj.kind === 'mannequin' && <PersonProperties obj={obj} edit={edit} />}
       <Section title="Transform">
         <Vec3Row label="Position" value={obj.position} step={0.05} precision={2} onChange={(v) => edit({ position: v }, `Move ${obj.name}`)} />
         <Vec3Row label="Rotation" value={obj.rotation} step={1} precision={1} suffix="°" onChange={(v) => edit({ rotation: v }, `Rotate ${obj.name}`)} />
-        {obj.kind !== 'mannequin' && (
+        {obj.kind !== 'mannequin' && obj.kind !== 'light' && (
           <Vec3Row label="Scale" value={obj.scale} step={0.02} precision={2} onChange={(v) => edit({ scale: v }, `Scale ${obj.name}`)} />
         )}
+        {obj.kind !== 'light' && (
         <div className="button-row">
           <button className="btn" onClick={() => focusOn(obj.id)} title="Set the camera's focus distance to this object">
             <Crosshair size={13} /> Focus camera here
@@ -365,6 +371,7 @@ function ObjectProperties({ obj }: { obj: SceneObject }) {
             Aim camera
           </button>
         </div>
+        )}
       </Section>
     </>
   )
@@ -380,6 +387,7 @@ export function PropertiesPanel() {
   return (
     <Panel title="Properties">
       {selection.length === 0 && <ShotProperties />}
+      {selection.length === 0 && <LightingProperties />}
       {showCamera && <CameraProperties />}
       {!showCamera && primary && selected.length > 1 && (
         <div className="hint">{selected.length} objects selected. Editing {primary.name}.</div>

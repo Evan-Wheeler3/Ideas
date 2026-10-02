@@ -86,7 +86,12 @@ interface Shot {
 
 interface Scene {
   objects: SceneObject[];
-  environment: { preset: 'studio' | 'day' | 'sunset' | 'night'; background: 'sky' | 'color'; color: string };
+  environment: {
+    preset: 'studio' | 'day' | 'overcast' | 'sunset' | 'night' | 'stage';
+    background: 'sky' | 'color';
+    color: string;
+    exposure: number;            // stops (EV)
+  };
   lightingPreset: 'none' | 'golden' | 'overcast' | 'night' | 'threepoint';
 }
 
@@ -102,7 +107,8 @@ interface SceneObject {
   color: string;
   pose?: Pose;                           // mannequin only
   assetId?: string;                      // model only
-  light?: { type: 'directional' | 'point' | 'spot' | 'area'; intensity: number; kelvin: number; color: string; shadows: boolean };
+  light?: { type: 'directional' | 'point' | 'spot' | 'area'; intensity: number; kelvin: number; color: string; shadows: boolean; angle?: number };
+  fromPreset?: string;                   // lights added by a lighting preset (replaced by the next one)
 }
 
 interface Pose {                          // mannequin joint rotations, degrees

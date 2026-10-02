@@ -30,6 +30,7 @@ export function makeFromCatalog(key: string, overrides: Partial<SceneObject> = {
     visible: true,
     ...(item.propId ? { propId: item.propId } : {}),
     ...(item.kind === 'mannequin' ? { pose: clonePose(item.pose ?? 'stand') } : {}),
+    ...(item.light ? { light: { ...item.light } } : {}),
     ...overrides
   }
 }
@@ -65,7 +66,7 @@ export function makeShot(number: string): Shot {
     fields: {},
     scene: {
       objects: [],
-      environment: { preset: 'studio', background: 'color', color: '#1b1d22' },
+      environment: { preset: 'studio', background: 'color', color: '#1b1d22', exposure: 0 },
       lightingPreset: 'none'
     },
     camera: makeCamera(),

@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 export function Panel({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
   return (
@@ -12,11 +13,40 @@ export function Panel({ title, actions, children }: { title: string; actions?: R
   )
 }
 
+// Which sections are collapsed, remembered across sessions (per section title).
+const STORAGE_KEY = 'shotboard.collapsed'
+function loadCollapsed(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as string[])
+  } catch {
+    return new Set()
+  }
+}
+const collapsed = loadCollapsed()
+
+/** A titled group of properties. Click the title to fold it away. */
 export function Section({ title, children }: { title: string; children: ReactNode }) {
+  // "Shot 3" and "Shot 4" share one memory: key on the first word.
+  const key = title.split(' ')[0]
+  const [open, setOpen] = useState(!collapsed.has(key))
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    if (next) collapsed.delete(key)
+    else collapsed.add(key)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...collapsed]))
+    } catch {
+      // Storage unavailable: the choice just won't be remembered.
+    }
+  }
   return (
-    <div className="section">
-      <div className="section-title">{title}</div>
-      {children}
+    <div className={`section${open ? '' : ' folded'}`}>
+      <button className="section-title" onClick={toggle} aria-expanded={open}>
+        <ChevronDown size={12} className="section-chevron" />
+        {title}
+      </button>
+      {open && children}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useStore } from './store/store'
 import { deleteSelection, duplicateSelection } from './store/actions'
 import { newShot, stepShot } from './store/shotActions'
 import { newProject, openProject, saveProject } from './persist/fileActions'
+import { toggleShortcuts } from './components/ShortcutsDialog'
 import { addKeyAtPlayhead, deleteKey, stepFrames, togglePlay } from './store/cameraActions'
 
 interface Shortcut {
@@ -58,6 +59,7 @@ const SHORTCUTS: Shortcut[] = [
   { keys: ['mod+shift+s'], run: () => void saveProject(true) },
   { keys: ['mod+o'], run: () => void openProject() },
   { keys: ['mod+n'], run: () => void newProject() },
+  { keys: ['?', 'shift+?'], run: toggleShortcuts },
   { keys: ['mod+z'], run: () => useStore.getState().undo() },
   { keys: ['mod+shift+z', 'mod+y'], run: () => useStore.getState().redo() }
 ]

@@ -46,6 +46,8 @@ interface State {
   joint: { objectId: string; joint: JointName } | null
   guides: Guides
   showLabels: boolean
+  /** Ambient occlusion: soft contact shading where things meet. */
+  ao: boolean
   hoveredId: string | null
   /** Time within the active shot, in seconds. */
   playhead: number
@@ -72,6 +74,7 @@ interface State {
   selectJoint(objectId: string, joint: JointName | null): void
   setGuides(patch: Partial<Guides>): void
   toggleLabels(): void
+  toggleAo(): void
   setHovered(id: string | null): void
   setPlayhead(t: number): void
   play(scope: 'shot' | 'sequence'): void
@@ -119,6 +122,7 @@ export const useStore = create<State>((set, get) => {
     joint: null,
     guides: { thirds: true, safe: false, center: false, mask: 0.92 },
     showLabels: true,
+    ao: true,
     hoveredId: null,
     playhead: 0,
     playing: false,
@@ -172,6 +176,7 @@ export const useStore = create<State>((set, get) => {
       set({ selection: [objectId], joint: joint ? { objectId, joint } : null, gizmo: joint ? 'rotate' : get().gizmo }),
     setGuides: (patch) => set((s) => ({ guides: { ...s.guides, ...patch } })),
     toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
+    toggleAo: () => set((s) => ({ ao: !s.ao })),
     setHovered: (hoveredId) => set({ hoveredId }),
     setPlayhead: (t) => set({ playhead: Math.max(0, t) }),
     play: (scope) => {

@@ -115,9 +115,15 @@ export function validateProject(raw: unknown): Project {
       shake: isObj(s.shake) && typeof s.shake.intensity === 'number' ? (s.shake as unknown as Shot['shake']) : { intensity: 0, seed: 1 },
       camera: cam as unknown as Shot['camera'],
       scene: {
-        environment: { preset: 'studio', background: 'color', color: '#1b1d22' },
         lightingPreset: 'none',
         ...(scene as object),
+        environment: {
+          preset: 'studio',
+          background: 'color',
+          color: '#1b1d22',
+          exposure: 0,
+          ...(isObj(scene.environment) ? scene.environment : {})
+        },
         objects: objects.map((o) => ({ visible: true, ...(o as object) }))
       } as Shot['scene']
     }

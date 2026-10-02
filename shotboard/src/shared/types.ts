@@ -57,13 +57,24 @@ export interface Shake {
   seed: number
 }
 
-export type EnvironmentPreset = 'studio' | 'day' | 'sunset' | 'night'
+export type EnvironmentPreset = 'studio' | 'day' | 'overcast' | 'sunset' | 'night' | 'stage'
 export type LightingPreset = 'none' | 'golden' | 'overcast' | 'night' | 'threepoint'
 
 export interface Scene {
   objects: SceneObject[]
-  environment: { preset: EnvironmentPreset; background: 'sky' | 'color'; color: string }
+  environment: Environment
+  /** The last lighting preset applied (for the UI); lights it added are tagged with fromPreset. */
   lightingPreset: LightingPreset
+}
+
+export interface Environment {
+  /** Sky, sun and ambient light. See scene/environments.ts. */
+  preset: EnvironmentPreset
+  /** Draw a procedural sky (day/sunset) or a flat colour behind the set. */
+  background: 'sky' | 'color'
+  color: string
+  /** Exposure in stops (EV): +1 is twice as bright. */
+  exposure: number
 }
 
 export type PrimitiveKind = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone'
@@ -73,12 +84,21 @@ export type PropId =
   | 'chair' | 'table' | 'sofa' | 'bed' | 'counter' | 'floorLamp'
   | 'wall' | 'door' | 'window' | 'car' | 'tree' | 'stairs'
 
+/**
+ * A light. It shines along the object's local -Z (rotate it to aim). Area lights take their size
+ * from the object's scale (x = width, y = height).
+ */
 export interface LightSettings {
   type: 'directional' | 'point' | 'spot' | 'area'
+  /** Brightness on a 0–10 scale; each type maps it to sensible physical units. */
   intensity: number
+  /** Colour temperature in Kelvin (1800 candle … 6500 daylight … 10000 blue sky). */
   kelvin: number
+  /** Extra tint, multiplied with the colour temperature. White = none. */
   color: string
   shadows: boolean
+  /** Spot cone angle in degrees. */
+  angle?: number
 }
 
 export type JointName =
@@ -108,6 +128,8 @@ export interface SceneObject {
   propId?: PropId
   assetId?: string
   light?: LightSettings
+  /** Set on lights added by a lighting preset, so applying another preset replaces them. */
+  fromPreset?: LightingPreset
 }
 
 export type SensorId = 'super35' | 'fullframe' | 'alexa65' | 'iphone'

@@ -5,7 +5,7 @@ import { chromium } from 'playwright-core'
 
 const out = process.argv[2] ?? 'test-output'
 mkdirSync(out, { recursive: true })
-const server = spawn('npx', ['vite', '--config', 'vite.web.config.ts'], { stdio: 'ignore' })
+const server = spawn('npx', ['vite', '--config', 'vite.web.config.ts'], { stdio: 'ignore', detached: true })
 await new Promise((r) => setTimeout(r, 3000))
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
@@ -31,4 +31,4 @@ await page.locator('.prop-row', { hasText: 'Focus on' }).locator('select').selec
 await page.waitForTimeout(1500)
 await page.screenshot({ path: `${out}/4-camera-dof.png` })
 await browser.close()
-server.kill()
+process.kill(-server.pid)

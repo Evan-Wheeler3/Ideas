@@ -1,6 +1,6 @@
 // 2D layer over the 3D view: the view toolbar, and in camera view the frame masks,
 // composition guides and the lens readout. Drawn in HTML/SVG so lines stay crisp.
-import { Aperture, Box, Grid3x3, Crosshair, Ratio, Tag, Video, ScanLine } from 'lucide-react'
+import { Aperture, Contrast, Box, Grid3x3, Crosshair, Ratio, Tag, Video, ScanLine } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { AspectRatio } from '../shared/types'
 import type { Rect } from '../camera/gate'
@@ -100,6 +100,8 @@ export function ViewportOverlay({ gate }: { gate: Rect }) {
   const setGuides = useStore((s) => s.setGuides)
   const showLabels = useStore((s) => s.showLabels)
   const toggleLabels = useStore((s) => s.toggleLabels)
+  const ao = useStore((s) => s.ao)
+  const toggleAo = useStore((s) => s.toggleAo)
   const aspect = useStore((s) => s.project.settings.aspect)
   const run = useStore((s) => s.run)
   const select = useStore((s) => s.select)
@@ -162,10 +164,16 @@ export function ViewportOverlay({ gate }: { gate: Rect }) {
               >
                 <Aperture size={14} /> DoF
               </Toggle>
+              <Toggle on={ao} onClick={toggleAo} title="Ambient occlusion: soft shading where objects meet">
+                <Contrast size={14} /> AO
+              </Toggle>
             </div>
           </>
         ) : (
           <div className="ov-group">
+            <Toggle on={ao} onClick={toggleAo} title="Ambient occlusion: soft shading where objects meet (turn off on slow machines)">
+              <Contrast size={14} /> AO
+            </Toggle>
             <Toggle on={showLabels} onClick={toggleLabels} title="Show name labels (L)">
               <Tag size={14} /> Labels
             </Toggle>

@@ -9,16 +9,17 @@ import { CAMERA_COLOR } from '../scene/colors'
 import { Panel } from './Panel'
 import { CameraIcon, iconFor } from './icons'
 
-type Group = 'People' | 'Props & set' | 'Imported' | 'Shapes'
+type Group = 'People' | 'Lights' | 'Props & set' | 'Imported' | 'Shapes'
 
 function groupOf(o: SceneObject): Group {
   if (o.kind === 'mannequin') return 'People'
+  if (o.kind === 'light') return 'Lights'
   if (o.kind === 'prop' || o.kind === 'plane') return 'Props & set'
   if (o.kind === 'model') return 'Imported'
   return 'Shapes'
 }
 
-const GROUPS: Group[] = ['People', 'Props & set', 'Imported', 'Shapes']
+const GROUPS: Group[] = ['People', 'Lights', 'Props & set', 'Imported', 'Shapes']
 
 function Row({ obj, selected }: { obj: SceneObject; selected: boolean }) {
   const shot = useActiveShot()

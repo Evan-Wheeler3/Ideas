@@ -6,7 +6,7 @@ import { useStore } from '../store/store'
 import { Panel } from './Panel'
 import { CATALOG_ICONS } from './icons'
 
-const ORDER: CatalogCategory[] = ['people', 'furniture', 'set', 'shapes']
+const ORDER: CatalogCategory[] = ['people', 'furniture', 'set', 'lights', 'shapes']
 
 export function AddPanel() {
   const fileInput = useRef<HTMLInputElement>(null)

@@ -203,15 +203,25 @@ kbd {
 
 .section { padding: 10px 12px 12px; border-bottom: 1px solid var(--line); }
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 0;
   font-size: 11px;
   font-weight: 600;
   color: var(--text);
   margin-bottom: 8px;
+  text-align: left;
 }
+.section-chevron { color: var(--text-faint); transition: transform 0.12s; }
+.section.folded { padding-bottom: 4px; }
+.section.folded .section-chevron { transform: rotate(-90deg); }
+.section-title:hover .section-chevron { color: var(--text); }
 
 .prop-row {
   display: grid;
-  grid-template-columns: 62px 1fr;
+  grid-template-columns: 74px 1fr;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
@@ -1088,3 +1098,16 @@ textarea.editable { min-height: 60px; line-height: 1.45; background: var(--bg-2)
 .ov-hud .hud-time { color: var(--text); }
 .ov-hud .hud-time.playing { color: #ff5a5a; }
 .keyed-hint { color: #4cc3ff; }
+
+/* ---------- Lighting ---------- */
+.chip.wide { font-family: var(--font); padding: 0 9px; }
+.kelvin-swatch { flex: none; width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--line-strong); }
+.vec3.two { grid-template-columns: 1fr 1fr; }
+.shadows-check { margin: 6px 0 2px; }
+.prop-row .inline { align-items: center; }
+.seg-small.text button { width: auto; padding: 0 9px; font-size: 11px; }
+.modal.shortcuts { width: 720px; }
+.modal.shortcuts .modal-title { margin-bottom: 14px; }
+.shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; }
+.shortcut-row { display: flex; align-items: baseline; gap: 10px; padding: 3px 6px; color: var(--text-dim); }
+.shortcut-row kbd { flex: none; min-width: 120px; text-align: left; border: 0; padding: 0; color: var(--text); font-size: 11px; }

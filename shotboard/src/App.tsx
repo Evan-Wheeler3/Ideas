@@ -5,6 +5,7 @@ import { AddPanel } from './components/AddPanel'
 import { PropertiesPanel } from './components/PropertiesPanel'
 import { ShotsPanel } from './components/ShotsPanel'
 import { DialogHost } from './components/Dialogs'
+import { ShortcutsDialog } from './components/ShortcutsDialog'
 import { ThumbnailRenderer } from './scene/ThumbnailRenderer'
 import { useProjectLifecycle } from './persist/fileActions'
 import { Viewport } from './scene/Viewport'
@@ -25,8 +26,8 @@ function StatusBar() {
       <span>{viewMode === 'camera' ? 'Camera view' : 'Editor view'}</span>
       <span className="spacer" />
       <span className="dim">
-        <kbd>Space</kbd> play · <kbd>K</kbd> key · <kbd>N</kbd> new shot · <kbd>[</kbd> <kbd>]</kbd> prev/next shot · <kbd>C</kbd> camera view · <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> move/rotate/scale · <kbd>F</kbd> frame · <kbd>L</kbd> labels ·{' '}
-        <kbd>X</kbd> snap · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Del</kbd> delete
+        <kbd>Space</kbd> play · <kbd>K</kbd> key · <kbd>N</kbd> new shot · <kbd>C</kbd> camera view · <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> move/rotate/scale · <kbd>F</kbd> frame ·{' '}
+        <kbd>?</kbd> all shortcuts
       </span>
     </footer>
   )
@@ -93,6 +94,7 @@ export function App() {
       <StatusBar />
       <ThumbnailRenderer />
       <DialogHost />
+      <ShortcutsDialog />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { Box3, MathUtils, PCFShadowMap, Vector3, type Object3D, type Perspective
 import { Canvas, useThree } from '@react-three/fiber'
 import { GizmoHelper, GizmoViewport, Grid, OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { DepthOfField, EffectComposer, Outline, Selection, SMAA } from '@react-three/postprocessing'
+import { DepthOfField, EffectComposer, N8AO, Outline, Selection, SMAA } from '@react-three/postprocessing'
 import type { AspectRatio, Camera, JointName, Vec3 } from '../shared/types'
 import { updateObject } from '../commands/objects'
 import { activeArea, aspectValue, blurDiameter, depthOfField } from '../camera/lens'
@@ -19,7 +19,7 @@ import { CameraRig } from './CameraRig'
 import { Gizmo, gizmoState, readTransform } from './Gizmo'
 import { ShotCameraView, editorView } from './ShotCameraView'
 import { ViewportOverlay } from './ViewportOverlay'
-import { StudioLighting } from './Lighting'
+import { SceneEnvironment } from './Lighting'
 import { LabelLayerContext } from './labelLayer'
 import { notePointerDown, wasDrag } from './clickGuard'
 
@@ -102,6 +102,7 @@ export function Viewport() {
   const gizmoMode = useStore((s) => s.gizmo)
   const gizmoSpace = useStore((s) => s.gizmoSpace)
   const playing = useStore((s) => s.playing)
+  const ao = useStore((s) => s.ao)
   const cam = useDisplayCamera()
   const { select, toggleSelect, setHovered, selectJoint, run } = useStore.getState()
   const [size, setSize] = useState({ width: 1, height: 1 })
@@ -203,9 +204,7 @@ export function Viewport() {
         }}
       >
         <SizeWatcher onSize={setSize} />
-        <color attach="background" args={[shot.scene.environment.color]} />
-        <fog attach="fog" args={[shot.scene.environment.color, 25, 70]} />
-        <StudioLighting />
+        <SceneEnvironment env={shot.scene.environment} />
         {!inCamera && (
           <Grid
             position={[0, 0.002, 0]}
@@ -228,6 +227,7 @@ export function Viewport() {
               selected={selection.includes(o.id)}
               hovered={hoveredId === o.id}
               showLabel={showLabels && !inCamera}
+              helpers={!inCamera}
               selectedJoint={joint?.objectId === o.id ? joint.joint : null}
               onSelect={onSelect}
               onHover={onHover}
@@ -235,6 +235,7 @@ export function Viewport() {
             />
           ))}
           <EffectComposer autoClear={false} multisampling={4}>
+            {ao ? <N8AO halfRes quality="medium" aoRadius={1} distanceFalloff={0.8} intensity={3.5} /> : <></>}
             <Outline visibleEdgeColor={SELECT_COLOR_HEX} hiddenEdgeColor={SELECT_HIDDEN_HEX} edgeStrength={inCamera ? 2.5 : 4} />
             {inCamera && cam.dof ? (
               <LensDepthOfField camera={cam} gateHeightPx={gate.height} aspect={aspect} />

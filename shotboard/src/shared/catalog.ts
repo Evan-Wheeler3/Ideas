@@ -1,7 +1,7 @@
 // Everything the Add panel can create, with sensible real-world defaults.
-import type { ObjectKind, PosePreset, PropId, Vec3 } from './types'
+import type { LightSettings, ObjectKind, PosePreset, PropId, Vec3 } from './types'
 
-export type CatalogCategory = 'people' | 'furniture' | 'set' | 'shapes'
+export type CatalogCategory = 'people' | 'furniture' | 'set' | 'lights' | 'shapes'
 
 export interface CatalogItem {
   key: string
@@ -14,12 +14,14 @@ export interface CatalogItem {
   scale?: Vec3
   /** Height off the floor for the object's origin. */
   y?: number
+  light?: LightSettings
 }
 
 export const CATEGORY_LABELS: Record<CatalogCategory, string> = {
   people: 'People',
   furniture: 'Furniture',
   set: 'Set & exterior',
+  lights: 'Lights',
   shapes: 'Shapes'
 }
 
@@ -41,6 +43,23 @@ export const CATALOG: CatalogItem[] = [
   { key: 'car', label: 'Car', category: 'set', kind: 'prop', propId: 'car', color: '#9c2f2f' },
   { key: 'tree', label: 'Tree', category: 'set', kind: 'prop', propId: 'tree', color: '#4f7a3a' },
   { key: 'floor', label: 'Floor', category: 'set', kind: 'plane', color: '#3a3d44', scale: [10, 1, 10], y: 0 },
+
+  {
+    key: 'spot', label: 'Spot', category: 'lights', kind: 'light', color: '#ffffff',
+    light: { type: 'spot', intensity: 4, kelvin: 3200, color: '#ffffff', shadows: true, angle: 40 }
+  },
+  {
+    key: 'softbox', label: 'Soft panel', category: 'lights', kind: 'light', color: '#ffffff', scale: [1.2, 1.2, 1],
+    light: { type: 'area', intensity: 4, kelvin: 5600, color: '#ffffff', shadows: false }
+  },
+  {
+    key: 'practical', label: 'Practical', category: 'lights', kind: 'light', color: '#ffffff',
+    light: { type: 'point', intensity: 2, kelvin: 2700, color: '#ffffff', shadows: true }
+  },
+  {
+    key: 'sun', label: 'Sun', category: 'lights', kind: 'light', color: '#ffffff',
+    light: { type: 'directional', intensity: 4, kelvin: 5600, color: '#ffffff', shadows: true }
+  },
 
   { key: 'box', label: 'Box', category: 'shapes', kind: 'box', color: '#8a8f98', y: 0.5 },
   { key: 'sphere', label: 'Sphere', category: 'shapes', kind: 'sphere', color: '#8a8f98', y: 0.5 },

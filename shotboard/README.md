@@ -14,8 +14,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and data model.
 | 2. Lens and camera view | Done |
 | 3. Shots and saving | Done |
 | 4. Keyframes and timeline | Done |
-| 5. Lighting and polish | Next |
-| 6. Export (PDF, PNG, MP4) | |
+| 5. Lighting and polish | Done |
+| 6. Export (PDF, PNG, MP4) | Next |
 
 ## Run it
 
@@ -33,7 +33,7 @@ npm run dev        # opens the desktop app with hot reload
 
 ```bash
 npm run typecheck  # TypeScript
-npm test           # unit tests (undo/redo, lens math, camera moves, shot list, project files)
+npm test           # unit tests (undo/redo, lens math, camera moves, lighting, shot list, project files)
 npm run smoke      # drives the UI in headless Chromium, saves screenshots to test-output/
 npm run smoke:electron  # Linux only: launches the real app under xvfb and saves a screenshot
 ```
@@ -70,6 +70,16 @@ To edit keys, click one to change its easing or delete it, or drag it to change 
 
 **Playing.** **Space** plays the current shot. **Shift+Space** or **Play all** plays every shot in order through the camera, as an animatic. Playback follows real time and drops frames on a slow machine rather than running slow.
 
+**Lighting.** With nothing selected, Properties has a **Lighting** section:
+- **Presets:** Golden hour (low warm sun, cool shadows), Overcast (soft, even daylight), Night (blue ambience, a warm practical and cool moonlight), and 3-point (key, fill and back light on a dark stage). Presets place their lights around whatever the camera is focused on. Applying another preset replaces those lights rather than adding more.
+- **Setting:** Studio, Day, Overcast, Sunset, Night or Dark stage. This sets the sky, sun and ambient light.
+- **Background and exposure:** a sky or a flat colour behind the set, and exposure in stops.
+- **Use this lighting in all shots** keeps the whole scene consistent.
+
+You can also add your own lights from the Add panel: Spot, Soft panel, Practical (bulb) and Sun. Each has brightness, colour temperature in Kelvin (with Candle, Tungsten, Daylight and Shade presets), a tint, the beam angle or panel size, and shadows. A light shines the way it points, so rotate it with **E** to aim it.
+
+Ambient occlusion (soft shading where objects meet) is on by default. Turn it off with the **AO** button on slow machines. Click a section title in Properties to fold it away.
+
 **Saving.** **File → Save** writes one `.shotboard` file. It contains the shots, thumbnails and any imported models, so you can send it to someone. Each save keeps the previous version next to it as `.shotboard.bak`. Unsaved work is autosaved every 30 seconds. If the app closes before you save, it offers to recover your work the next time it starts.
 
 **Lens.** With nothing selected, Properties shows the camera. Set the focal length, sensor (Super 35, Full Frame, Alexa 65, iPhone), f-stop and focus. **Focus on** pulls focus to a person or prop. The field of view and the in-focus range are calculated the way a real lens works.
@@ -99,5 +109,6 @@ To edit keys, click one to change its easing or delete it, or drag it to change 
 | Del | Delete (the selected keyframe first, else objects) |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
 | Esc | Stop playback, leave joint posing, then clear the selection |
+| ? | Show all keyboard shortcuts |
 
 In Properties, drag a field's label left or right to scrub the value. Hold Shift for fine changes and Ctrl for coarse ones. Double-click an item in the scene list to rename it.

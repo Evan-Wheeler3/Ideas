@@ -25,3 +25,13 @@ export function forwardVector(rotation: Vec3): Vector3 {
 
 export const cameraEuler = (rotation: Vec3): Euler =>
   new Euler(MathUtils.degToRad(rotation[0]), MathUtils.degToRad(rotation[1]), MathUtils.degToRad(rotation[2]), 'YXZ')
+
+/**
+ * Rotation (degrees, XYZ order, as scene objects use) that points an object's local -Z from
+ * `from` toward `to`. Used to aim lights.
+ */
+export function aimRotation(from: Vec3, to: Vec3): Vec3 {
+  const m = new Matrix4().lookAt(new Vector3(...from), new Vector3(...to), UP)
+  const e = new Euler().setFromQuaternion(new Quaternion().setFromRotationMatrix(m), 'XYZ')
+  return [round(MathUtils.radToDeg(e.x)), round(MathUtils.radToDeg(e.y)), round(MathUtils.radToDeg(e.z))]
+}

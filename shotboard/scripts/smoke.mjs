@@ -9,8 +9,13 @@ const URL = 'http://localhost:5199/?autosaveMs=1500'
 const OUT = 'test-output'
 mkdirSync(OUT, { recursive: true })
 
-const server = spawn('npx', ['vite', '--config', 'vite.web.config.ts'], { stdio: 'pipe' })
-const stop = () => server.kill('SIGTERM')
+// Own process group, so stopping it also stops the Vite process npx starts.
+const server = spawn('npx', ['vite', '--config', 'vite.web.config.ts'], { stdio: 'pipe', detached: true })
+const stop = () => {
+  try {
+    process.kill(-server.pid, 'SIGTERM')
+  } catch {}
+}
 
 async function waitForServer() {
   for (let i = 0; i < 60; i++) {
@@ -338,7 +343,8 @@ try {
   await page.locator('.file-btn').click()
   await page.locator('.menu-item', { hasText: 'Open sample project' }).click()
   check((await cards.count()) === 6, 'sample project has 6 shots')
-  await page.waitForFunction(() => document.querySelectorAll('.shot-card img').length === 6, null, { timeout: 60000 })
+  // Generous: software rendering in CI draws two canvases at once and is slow.
+  await page.waitForFunction(() => document.querySelectorAll('.shot-card img').length === 6, null, { timeout: 180000 })
   check(true, 'thumbnails render for every shot, not just the current one')
   await page.keyboard.press('c')
   await page.locator('.shot-card').nth(3).click()
@@ -460,6 +466,63 @@ try {
   await page.keyboard.press('Escape')
   await page.waitForTimeout(800)
   await page.screenshot({ path: `${OUT}/m4-editor.png` })
+
+  // ---- Milestone 5: lighting ----
+  const lightRows = () => page.locator('.tree-row', { has: page.locator('.tree-icon') }).filter({ hasText: /light|Practical|Moonlight|Spot/ }).count()
+  const lightsGroup = async () => {
+    const g = page.locator('.tree-group', { hasText: 'Lights' })
+    return (await g.count()) ? Number(await g.locator('span').textContent()) : 0
+  }
+  await page.keyboard.press('Escape')
+  check(await page.locator('.section-title', { hasText: 'Lighting' }).isVisible(), 'with nothing selected, Properties shows Lighting')
+  await page.locator('.chip', { hasText: '3-point' }).click()
+  check((await lightsGroup()) === 3, '3-point preset adds key, fill and back lights')
+  check((await page.locator('.prop-row', { hasText: 'Setting' }).locator('select').inputValue()) === 'stage', '3-point uses the dark stage')
+  await page.locator('.chip', { hasText: 'Night' }).click()
+  check((await lightsGroup()) === 2, 'Night replaces the preset lights instead of adding more')
+  await page.keyboard.press('Control+z')
+  check((await lightsGroup()) === 3, 'undo brings back the previous lighting')
+  await page.locator('.prop-row', { hasText: 'Setting' }).locator('select').selectOption('day')
+  check(await page.locator('.seg-small.text button.on', { hasText: 'Sky' }).count() === 1, 'Day setting shows a sky')
+  const ev = field('Exposure')
+  await ev.click()
+  await ev.fill('0.5')
+  await ev.press('Enter')
+  check((await ev.inputValue()) === '0.5', 'exposure can be set')
+  await page.getByRole('button', { name: 'Use this lighting in all shots' }).click()
+  await page.waitForSelector('.toast', { hasText: 'Lighting copied' })
+  await cards.nth(4).click()
+  await page.keyboard.press('Escape')
+  check((await lightsGroup()) === 3 && (await ev.inputValue()) === '0.5', 'lighting copied to the other shots')
+
+  await page.getByRole('button', { name: 'Spot', exact: true }).click()
+  check(await page.locator('.section-title', { hasText: 'Light' }).first().isVisible(), 'adding a spot light shows its light settings')
+  await page.locator('.chip', { hasText: 'Daylight' }).click()
+  check((await field('Colour temp').inputValue()) === '5600', 'colour temperature presets apply')
+  const bright = field('Brightness')
+  await bright.click()
+  await bright.fill('7')
+  await bright.press('Enter')
+  check((await bright.inputValue()) === '7.0', 'light brightness can be changed')
+  await page.keyboard.press('Escape')
+
+  await page.locator('.ov-btn', { hasText: 'AO' }).click()
+  check(!(await page.evaluate(() => window.__shotboard.getState().ao)), 'ambient occlusion can be turned off')
+  await page.locator('.ov-btn', { hasText: 'AO' }).click()
+
+  await page.keyboard.press('?')
+  check(await page.locator('.modal.shortcuts').isVisible(), '? opens the keyboard shortcut sheet')
+  await page.keyboard.press('Escape')
+  check(await page.locator('.modal.shortcuts').count() === 0, 'Esc closes it')
+
+  await cards.nth(1).click()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('c')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/m5-camera.png` })
+  await page.keyboard.press('c')
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: `${OUT}/m5-editor.png` })
 
   check(errors.length === 0, `no console errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
   await browser.close()

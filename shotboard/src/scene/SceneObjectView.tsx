@@ -7,6 +7,8 @@ import type { JointName, SceneObject } from '../shared/types'
 import { assetUrl } from '../store/assets'
 import { Mannequin } from './Mannequin'
 import { PropModel } from './Props'
+import { LightSource } from './Lighting'
+import { LightHelper } from './LightHelper'
 import { useLabelLayer } from './labelLayer'
 import { wasDrag } from './clickGuard'
 
@@ -63,6 +65,8 @@ interface Props {
   selected: boolean
   hovered: boolean
   showLabel: boolean
+  /** Draw editor-only helpers (light icons). Off when looking through the camera. */
+  helpers: boolean
   selectedJoint: JointName | null
   onSelect(id: string, additive: boolean): void
   onHover(id: string | null): void
@@ -74,6 +78,7 @@ export const SceneObjectView = memo(function SceneObjectView({
   selected,
   hovered,
   showLabel,
+  helpers,
   selectedJoint,
   onSelect,
   onHover,
@@ -140,7 +145,9 @@ export const SceneObjectView = memo(function SceneObjectView({
               <MissingModel />
             ))}
           {SHAPES.has(obj.kind) && <Shape kind={obj.kind} color={obj.color} />}
+          {obj.kind === 'light' && obj.light && helpers && <LightHelper obj={obj} />}
         </Select>
+        {obj.kind === 'light' && obj.light && <LightSource obj={obj} />}
       </group>
       {/* Labels stay mounted and are hidden with CSS: unmounting drei's Html mid-render warns in React 19. */}
       {labelAt && (
