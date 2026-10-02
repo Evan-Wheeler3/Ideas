@@ -5,16 +5,20 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 mkdirSync('samples', { recursive: true })
 import { chromium } from 'playwright-core'
 
-const URL = 'http://localhost:5199/?autosaveMs=1500'
+// The export helper runs on its own port for this test (see below).
+const URL = 'http://localhost:5199/?autosaveMs=1500&sidecar=http://127.0.0.1:8798&token=dev'
 const OUT = 'test-output'
 mkdirSync(OUT, { recursive: true })
 
 // Own process group, so stopping it also stops the Vite process npx starts.
 const server = spawn('npx', ['vite', '--config', 'vite.web.config.ts'], { stdio: 'pipe', detached: true })
+const helper = spawn('node', ['scripts/server.mjs'], { stdio: 'ignore', detached: true, env: { ...process.env, SHOTBOARD_PORT: '8798' } })
 const stop = () => {
-  try {
-    process.kill(-server.pid, 'SIGTERM')
-  } catch {}
+  for (const p of [server, helper]) {
+    try {
+      process.kill(-p.pid, 'SIGTERM')
+    } catch {}
+  }
 }
 
 async function waitForServer() {
@@ -531,6 +535,7 @@ try {
   await page.keyboard.press('Control+e')
   check(await page.locator('.export-modal').isVisible(), 'Ctrl+E opens the export dialog')
   await page.waitForSelector('.helper-status.ok, .helper-status.bad', { timeout: 15000 })
+  check(await page.locator('.helper-status.ok').count() === 1, 'the export helper is found and ready')
   check(await page.locator('.export-card').count() === 3, 'it offers PDF, stills and MP4')
   await page.keyboard.press('Escape')
   check(await page.locator('.export-modal').count() === 0, 'Esc closes the export dialog')
