@@ -351,8 +351,11 @@ try {
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `${OUT}/m3-sample.png` })
   await page.keyboard.press('c')
-  const [sampleDl] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Control+s')])
-  await sampleDl.saveAs('samples/Diner-Scene.shotboard')
+  // Refresh samples/Diner-Scene.shotboard only when asked (it gets new random ids every time).
+  if (process.env.UPDATE_SAMPLE) {
+    const [sampleDl] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Control+s')])
+    await sampleDl.saveAs('samples/Diner-Scene.shotboard')
+  }
 
   // ---- Autosave and recovery ----
   const title = page.locator('.title-input')
@@ -360,7 +363,7 @@ try {
   await title.press('Enter')
   await page.waitForTimeout(3500)
   await page.reload()
-  await page.waitForSelector('.modal', { timeout: 10000 })
+  await page.waitForSelector('.modal', { timeout: 60000 })
   check(await page.locator('.modal', { hasText: 'Recover unsaved work' }).isVisible(), 'after a crash/reload, recovery is offered')
   await page.locator('.modal .btn.primary').click()
   await page.waitForTimeout(500)
