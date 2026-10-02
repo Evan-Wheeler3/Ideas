@@ -28,13 +28,15 @@ export function NumberField({ label, value, onChange, step = 0.1, precision = 2,
     if (!editing) setText(value.toFixed(precision))
   }, [value, precision, editing])
 
-  const cancelled = useRef(false)
+  // Set while the field is being edited; commit() clears it so Enter + blur never commit twice.
+  const active = useRef(false)
 
-  const commit = () => {
+  const commit = (apply: boolean) => {
+    if (!active.current) return
+    active.current = false
     setEditing(false)
     const n = Number.parseFloat(text)
-    if (!cancelled.current && Number.isFinite(n) && n !== value) onChange(clamp(n, min, max))
-    cancelled.current = false
+    if (apply && Number.isFinite(n) && n !== value) onChange(clamp(n, min, max))
   }
 
   return (
@@ -60,16 +62,23 @@ export function NumberField({ label, value, onChange, step = 0.1, precision = 2,
       <input
         value={editing ? text : `${value.toFixed(precision)}${suffix ?? ''}`}
         onFocus={(e) => {
+          active.current = true
           setEditing(true)
           setText(value.toFixed(precision))
-          requestAnimationFrame(() => e.target.select())
+          // Select on the next frame (after the click lands). Skip if focus already moved on:
+          // select() would otherwise pull focus back when frames are slow.
+          const input = e.target
+          requestAnimationFrame(() => document.activeElement === input && input.select())
         }}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commit}
+        onChange={(e) => {
+          active.current = true
+          setEditing(true)
+          setText(e.target.value)
+        }}
+        onBlur={() => commit(true)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-          if (e.key === 'Escape') {
-            cancelled.current = true
+          if (e.key === 'Enter' || e.key === 'Escape') {
+            commit(e.key === 'Enter')
             ;(e.target as HTMLInputElement).blur()
           }
         }}

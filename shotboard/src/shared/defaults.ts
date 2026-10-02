@@ -1,6 +1,9 @@
 import { nanoid } from 'nanoid'
-import type { ColumnDef, ObjectKind, Project, SceneObject, Shot } from './types'
+import type { Camera, ColumnDef, ObjectKind, Project, SceneObject, Shot, Vec3 } from './types'
 import { SCHEMA_VERSION } from './types'
+import { catalogItem, CATALOG } from './catalog'
+import { clonePose } from './poses'
+import { lookAtRotation } from '../camera/orient'
 
 export const newId = (): string => nanoid(10)
 
@@ -13,29 +16,41 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'notes', label: 'Notes', kind: 'builtin', visible: true }
 ]
 
-const PRIMITIVE_DEFAULTS: Record<ObjectKind, Pick<SceneObject, 'name' | 'position' | 'scale' | 'color'>> = {
-  box: { name: 'Box', position: [0, 0.5, 0], scale: [1, 1, 1], color: '#8a8f98' },
-  sphere: { name: 'Sphere', position: [0, 0.5, 0], scale: [1, 1, 1], color: '#8a8f98' },
-  cylinder: { name: 'Cylinder', position: [0, 0.5, 0], scale: [1, 1, 1], color: '#8a8f98' },
-  cone: { name: 'Cone', position: [0, 0.5, 0], scale: [1, 1, 1], color: '#8a8f98' },
-  plane: { name: 'Plane', position: [0, 0, 0], scale: [2, 1, 2], color: '#6b7078' },
-  mannequin: { name: 'Person', position: [0, 0, 0], scale: [1, 1, 1], color: '#c9b8a3' },
-  model: { name: 'Model', position: [0, 0, 0], scale: [1, 1, 1], color: '#ffffff' },
-  light: { name: 'Light', position: [2, 3, 2], scale: [1, 1, 1], color: '#ffffff' }
-}
-
-export function makeObject(kind: ObjectKind, overrides: Partial<SceneObject> = {}): SceneObject {
-  const d = PRIMITIVE_DEFAULTS[kind]
+/** Create an object from a catalog entry (see catalog.ts). */
+export function makeFromCatalog(key: string, overrides: Partial<SceneObject> = {}): SceneObject {
+  const item = catalogItem(key)
   return {
     id: newId(),
-    kind,
-    name: d.name,
-    position: [...d.position],
+    kind: item.kind,
+    name: item.label === 'Seated' ? 'Person' : item.label,
+    position: [0, item.y ?? 0, 0],
     rotation: [0, 0, 0],
-    scale: [...d.scale],
-    color: d.color,
+    scale: item.scale ? [...item.scale] : [1, 1, 1],
+    color: item.color,
     visible: true,
+    ...(item.propId ? { propId: item.propId } : {}),
+    ...(item.kind === 'mannequin' ? { pose: clonePose(item.pose ?? 'stand') } : {}),
     ...overrides
+  }
+}
+
+/** Create a basic object by kind (shapes, or the first catalog entry of that kind). */
+export function makeObject(kind: ObjectKind, overrides: Partial<SceneObject> = {}): SceneObject {
+  const item = CATALOG.find((c) => c.kind === kind && c.category === 'shapes') ?? CATALOG.find((c) => c.kind === kind)
+  if (!item) throw new Error(`No catalog entry for ${kind}`)
+  return makeFromCatalog(item.key, overrides)
+}
+
+export function makeCamera(position: Vec3 = [0, 1.6, 6], target: Vec3 = [0, 1, 0]): Camera {
+  const d = Math.hypot(target[0] - position[0], target[1] - position[1], target[2] - position[2])
+  return {
+    position,
+    rotation: lookAtRotation(position, target),
+    focalLength: 35,
+    sensor: 'super35',
+    aperture: 2.8,
+    focusDistance: Math.round(d * 100) / 100,
+    dof: false
   }
 }
 
@@ -52,15 +67,7 @@ export function makeShot(number: string): Shot {
       environment: { preset: 'studio', background: 'color', color: '#1b1d22' },
       lightingPreset: 'none'
     },
-    camera: {
-      position: [0, 1.6, 6],
-      rotation: [0, 0, 0],
-      focalLength: 35,
-      sensor: 'super35',
-      aperture: 2.8,
-      focusDistance: 6,
-      dof: false
-    },
+    camera: makeCamera(),
     keys: []
   }
 }
@@ -77,14 +84,22 @@ export function makeProject(title = 'Untitled'): Project {
   }
 }
 
-/** A small starter set so a new project isn't an empty void. */
+/** A small diner-style set, so a new project starts with something to frame. */
 export function makeStarterProject(): Project {
   const p = makeProject('Untitled')
-  p.shots[0].scene.objects = [
-    makeObject('plane', { name: 'Floor', scale: [12, 1, 12], color: '#3a3d44' }),
-    makeObject('box', { name: 'Table', position: [0, 0.38, 0], scale: [1.6, 0.76, 0.9], color: '#7a5c44' }),
-    makeObject('cylinder', { name: 'Stool', position: [-1.3, 0.3, 0.2], scale: [0.4, 0.6, 0.4], color: '#9a3b34' }),
-    makeObject('sphere', { name: 'Lamp', position: [1.1, 1.2, -0.6], scale: [0.35, 0.35, 0.35], color: '#e8d9b5' })
+  const shot = p.shots[0]
+  shot.scene.objects = [
+    makeFromCatalog('floor', { scale: [12, 1, 12] }),
+    makeFromCatalog('wall', { position: [0, 0, -2.4] }),
+    makeFromCatalog('door', { position: [2.3, 0, -2.3] }),
+    makeFromCatalog('floorLamp', { position: [-2.2, 0, -1.7] }),
+    makeFromCatalog('table', { position: [0, 0, 0] }),
+    makeFromCatalog('chair', { name: 'Chair A', position: [-0.95, 0, 0], rotation: [0, 90, 0] }),
+    makeFromCatalog('chair', { name: 'Chair B', position: [0.95, 0, 0], rotation: [0, -90, 0] }),
+    makeFromCatalog('person-sit', { name: 'Anna', position: [-1.02, 0, 0], rotation: [0, 90, 0] }),
+    makeFromCatalog('person', { name: 'Ben', position: [1.7, 0, 0.7], rotation: [0, -115, 0] })
   ]
+  shot.camera = makeCamera([0.9, 1.45, 5.4], [0.4, 1.0, 0.2])
+  shot.type = 'MS'
   return p
 }

@@ -92,7 +92,9 @@ interface Scene {
 interface SceneObject {
   id: string;
   name: string;
-  kind: 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'mannequin' | 'model' | 'light';
+  kind: 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone' | 'prop' | 'mannequin' | 'model' | 'light';
+  propId?: 'chair' | 'table' | 'sofa' | 'bed' | 'counter' | 'floorLamp' | 'wall' | 'door' | 'window' | 'car' | 'tree' | 'stairs';
+  visible: boolean;
   position: [number, number, number];
   rotation: [number, number, number];   // degrees
   scale: [number, number, number];
@@ -104,12 +106,13 @@ interface SceneObject {
 
 interface Pose {                          // mannequin joint rotations, degrees
   preset: 'stand' | 'sit' | 'walk' | 'run' | 'point' | 'custom';
+  hipsY: number;                          // raise/lower the hips in metres (sitting)
   joints: Partial<Record<'head'|'torso'|'armL'|'armR'|'forearmL'|'forearmR'|'legL'|'legR'|'shinL'|'shinR', [number, number, number]>>;
 }
 
 interface Camera {
   position: [number, number, number];
-  rotation: [number, number, number];   // degrees
+  rotation: [number, number, number];   // degrees, YXZ order (pan, tilt, roll)
   focalLength: number;                  // mm
   sensor: 'super35' | 'fullframe' | 'alexa65' | 'iphone';
   aperture: number;                     // f-stop

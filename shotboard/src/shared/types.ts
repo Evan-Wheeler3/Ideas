@@ -55,7 +55,11 @@ export interface Scene {
 }
 
 export type PrimitiveKind = 'box' | 'sphere' | 'cylinder' | 'plane' | 'cone'
-export type ObjectKind = PrimitiveKind | 'mannequin' | 'model' | 'light'
+export type ObjectKind = PrimitiveKind | 'prop' | 'mannequin' | 'model' | 'light'
+
+export type PropId =
+  | 'chair' | 'table' | 'sofa' | 'bed' | 'counter' | 'floorLamp'
+  | 'wall' | 'door' | 'window' | 'car' | 'tree' | 'stairs'
 
 export interface LightSettings {
   type: 'directional' | 'point' | 'spot' | 'area'
@@ -70,8 +74,12 @@ export type JointName =
   | 'armL' | 'armR' | 'forearmL' | 'forearmR'
   | 'legL' | 'legR' | 'shinL' | 'shinR'
 
+export type PosePreset = 'stand' | 'sit' | 'walk' | 'run' | 'point'
+
 export interface Pose {
-  preset: 'stand' | 'sit' | 'walk' | 'run' | 'point' | 'custom'
+  preset: PosePreset | 'custom'
+  /** Raise or lower the hips, in metres (e.g. sitting). */
+  hipsY: number
   joints: Partial<Record<JointName, Vec3>>
 }
 
@@ -85,6 +93,7 @@ export interface SceneObject {
   color: string
   visible: boolean
   pose?: Pose
+  propId?: PropId
   assetId?: string
   light?: LightSettings
 }
@@ -93,6 +102,7 @@ export type SensorId = 'super35' | 'fullframe' | 'alexa65' | 'iphone'
 
 export interface Camera {
   position: Vec3
+  /** Degrees, applied in YXZ order (pan, then tilt, then roll). */
   rotation: Vec3
   focalLength: number
   sensor: SensorId

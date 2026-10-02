@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Clapperboard, Globe, Magnet, Move3d, Redo2, Rotate3d, Scale3d, Undo2, Video, Box as BoxIcon } from 'lucide-react'
+import { Clapperboard, Globe, Magnet, Move3d, Redo2, Rotate3d, Scale3d, Undo2, Box as BoxIcon } from 'lucide-react'
 import { useDirty, useStore, type GizmoMode } from '../store/store'
 
 function ToolButton({
@@ -41,7 +41,6 @@ export function Toolbar() {
   const future = useStore((s) => s.history.future)
   const undo = useStore((s) => s.undo)
   const redo = useStore((s) => s.redo)
-  const viewMode = useStore((s) => s.viewMode)
 
   const lastUndo = past[past.length - 1]
   const nextRedo = future[0]
@@ -85,15 +84,6 @@ export function Toolbar() {
       </div>
 
       <div className="spacer" />
-
-      <div className="segmented" title="Camera view arrives in milestone 2">
-        <button className={viewMode === 'editor' ? 'active' : ''}>
-          <BoxIcon size={14} /> Editor
-        </button>
-        <button disabled>
-          <Video size={14} /> Camera
-        </button>
-      </div>
     </header>
   )
 }

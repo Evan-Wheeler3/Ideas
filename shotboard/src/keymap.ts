@@ -15,7 +15,18 @@ const SHORTCUTS: Shortcut[] = [
   { keys: ['q'], run: () => useStore.getState().toggleGizmoSpace() },
   { keys: ['x'], run: () => useStore.getState().setSnap({ enabled: !useStore.getState().snap.enabled }) },
   { keys: ['f'], run: () => useStore.getState().requestFrame() },
-  { keys: ['escape'], run: () => useStore.getState().select([]) },
+  { keys: ['c'], run: () => useStore.getState().setViewMode(useStore.getState().viewMode === 'camera' ? 'editor' : 'camera') },
+  { keys: ['l'], run: () => useStore.getState().toggleLabels() },
+  { keys: ['g'], run: () => useStore.getState().setGuides({ thirds: !useStore.getState().guides.thirds }) },
+  {
+    keys: ['escape'],
+    // Leave joint posing first, then clear the selection.
+    run: () => {
+      const s = useStore.getState()
+      if (s.joint) s.selectJoint(s.joint.objectId, null)
+      else s.select([])
+    }
+  },
   { keys: ['delete', 'backspace'], run: deleteSelection },
   { keys: ['mod+d'], run: duplicateSelection },
   { keys: ['mod+z'], run: () => useStore.getState().undo() },

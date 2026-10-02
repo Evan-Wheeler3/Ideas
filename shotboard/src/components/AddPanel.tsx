@@ -1,30 +1,67 @@
-import type { ObjectKind } from '../shared/types'
-import { addNew } from '../store/actions'
+import { useRef } from 'react'
+import { Package, Upload } from 'lucide-react'
+import { CATALOG, CATEGORY_LABELS, type CatalogCategory } from '../shared/catalog'
+import { addFromCatalog, addImported, importModelFiles } from '../store/actions'
+import { useStore } from '../store/store'
 import { Panel } from './Panel'
-import { KIND_ICONS } from './ScenePanel'
+import { CATALOG_ICONS } from './icons'
 
-const ITEMS: { kind: ObjectKind; label: string }[] = [
-  { kind: 'box', label: 'Box' },
-  { kind: 'sphere', label: 'Sphere' },
-  { kind: 'cylinder', label: 'Cylinder' },
-  { kind: 'cone', label: 'Cone' },
-  { kind: 'plane', label: 'Plane' }
-]
+const ORDER: CatalogCategory[] = ['people', 'furniture', 'set', 'shapes']
 
 export function AddPanel() {
+  const fileInput = useRef<HTMLInputElement>(null)
+  const assets = useStore((s) => s.project.assets)
+  const imported = Object.values(assets)
+
   return (
-    <Panel title="Add">
-      <div className="add-grid">
-        {ITEMS.map(({ kind, label }) => {
-          const Icon = KIND_ICONS[kind]
-          return (
-            <button key={kind} className="add-tile" onClick={() => addNew(kind)} title={`Add ${label.toLowerCase()}`}>
-              <Icon size={22} strokeWidth={1.4} />
-              <span>{label}</span>
-            </button>
-          )
-        })}
-      </div>
+    <Panel
+      title="Add"
+      actions={
+        <button className="panel-btn" onClick={() => fileInput.current?.click()} title="Import a .glb or .gltf model (or drop it on the 3D view)">
+          <Upload size={13} /> Import
+        </button>
+      }
+    >
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".glb,.gltf"
+        multiple
+        hidden
+        onChange={(e) => {
+          void importModelFiles([...(e.target.files ?? [])])
+          e.target.value = ''
+        }}
+      />
+      {ORDER.map((cat) => (
+        <div key={cat} className="add-section">
+          <div className="add-section-title">{CATEGORY_LABELS[cat]}</div>
+          <div className="add-grid">
+            {CATALOG.filter((c) => c.category === cat).map((item) => {
+              const Icon = CATALOG_ICONS[item.key] ?? Package
+              return (
+                <button key={item.key} className="add-tile" onClick={() => addFromCatalog(item.key)} title={`Add ${item.label.toLowerCase()}`}>
+                  <Icon size={20} strokeWidth={1.5} />
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+      {imported.length > 0 && (
+        <div className="add-section">
+          <div className="add-section-title">Imported</div>
+          <div className="add-grid">
+            {imported.map((a) => (
+              <button key={a.id} className="add-tile" onClick={() => addImported(a.id)} title={`Add another ${a.name}`}>
+                <Package size={20} strokeWidth={1.5} />
+                <span className="add-tile-name">{a.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </Panel>
   )
 }

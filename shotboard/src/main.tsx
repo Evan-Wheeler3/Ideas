@@ -1,10 +1,6 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import './styles/app.css'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
+// No <StrictMode>: its dev-only double mount makes drei's <Html> labels warn on every load.
+createRoot(document.getElementById('root')!).render(<App />)
