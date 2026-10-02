@@ -4,6 +4,7 @@ import type { SceneObject } from '../shared/types'
 import { updateObject } from '../commands/objects'
 import { CAMERA_ID, useActiveShot, useStore } from '../store/store'
 import { lensLabel } from '../camera/lens'
+import { useDisplayCamera } from '../store/cameraActions'
 import { CAMERA_COLOR } from '../scene/colors'
 import { Panel } from './Panel'
 import { CameraIcon, iconFor } from './icons'
@@ -83,6 +84,7 @@ export function ScenePanel() {
   const selection = useStore((s) => s.selection)
   const select = useStore((s) => s.select)
   const camSelected = selection.includes(CAMERA_ID)
+  const cam = useDisplayCamera()
 
   return (
     <Panel title="Scene">
@@ -90,7 +92,7 @@ export function ScenePanel() {
         <div className={`tree-row camera-row${camSelected ? ' selected' : ''}`} onClick={() => select([CAMERA_ID])}>
           <CameraIcon size={14} className="tree-icon" style={{ color: CAMERA_COLOR }} />
           <span className="tree-name">Camera</span>
-          <span className="tree-meta">{lensLabel(shot.camera)}</span>
+          <span className="tree-meta">{lensLabel(cam)}</span>
         </div>
         {GROUPS.map((g) => {
           const items = shot.scene.objects.filter((o) => groupOf(o) === g)

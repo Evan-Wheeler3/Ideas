@@ -7,6 +7,7 @@ import { Canvas, useThree } from '@react-three/fiber'
 import type { AspectRatio, Shot } from '../shared/types'
 import { aspectValue, fieldOfView } from '../camera/lens'
 import { cameraEuler } from '../camera/orient'
+import { keyedPose } from '../camera/animate'
 import { useStore } from '../store/store'
 import { shotHash, useThumbs } from '../store/thumbs'
 import { assetUrl } from '../store/assets'
@@ -23,9 +24,11 @@ const noop = () => {}
 function ShotCamera({ shot, aspect }: { shot: Shot; aspect: AspectRatio }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
   useLayoutEffect(() => {
-    camera.position.set(...shot.camera.position)
-    camera.rotation.copy(cameraEuler(shot.camera.rotation))
-    camera.fov = fieldOfView(shot.camera.focalLength, shot.camera.sensor, aspect).v
+    // The thumbnail is the shot's first frame (no shake).
+    const pose = keyedPose(shot, 0)
+    camera.position.set(...pose.position)
+    camera.rotation.copy(cameraEuler(pose.rotation))
+    camera.fov = fieldOfView(pose.focalLength, shot.camera.sensor, aspect).v
     camera.near = 0.05
     camera.far = 500
     camera.updateProjectionMatrix()

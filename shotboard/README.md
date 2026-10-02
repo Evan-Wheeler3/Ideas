@@ -13,8 +13,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and data model.
 | 1. Viewport and gizmos | Done |
 | 2. Lens and camera view | Done |
 | 3. Shots and saving | Done |
-| 4. Keyframes and timeline | Next |
-| 5. Lighting and polish | |
+| 4. Keyframes and timeline | Done |
+| 5. Lighting and polish | Next |
 | 6. Export (PDF, PNG, MP4) | |
 
 ## Run it
@@ -33,7 +33,7 @@ npm run dev        # opens the desktop app with hot reload
 
 ```bash
 npm run typecheck  # TypeScript
-npm test           # unit tests (undo/redo, lens math, shot list, project files)
+npm test           # unit tests (undo/redo, lens math, camera moves, shot list, project files)
 npm run smoke      # drives the UI in headless Chromium, saves screenshots to test-output/
 npm run smoke:electron  # Linux only: launches the real app under xvfb and saves a screenshot
 ```
@@ -61,6 +61,15 @@ In the editor view, **Camera from view** puts the shot camera where you're looki
 
 Shots are numbered automatically. Type your own number (like "12A") to keep it, or clear it to go back to automatic. With nothing selected, Properties shows the shot's type, duration, notes and your custom fields.
 
+**Camera moves.** The timeline under the 3D view belongs to the current shot. There are three ways to build a move:
+- **Moves** adds a preset that runs for the whole shot: dolly, truck, pan, tilt, crane, orbit, zoom, or dolly zoom (the "Vertigo" effect). There's an Amount slider.
+- Press **K** to add a keyframe at the playhead.
+- Once a shot has a keyframe, scrub to another time and move the camera (gizmo, camera view, or Properties). That records a keyframe there automatically.
+
+To edit keys, click one to change its easing or delete it, or drag it to change its timing. **Handheld** adds a repeatable camera shake, which shows when playing.
+
+**Playing.** **Space** plays the current shot. **Shift+Space** or **Play all** plays every shot in order through the camera, as an animatic. Playback follows real time and drops frames on a slow machine rather than running slow.
+
 **Saving.** **File → Save** writes one `.shotboard` file. It contains the shots, thumbnails and any imported models, so you can send it to someone. Each save keeps the previous version next to it as `.shotboard.bak`. Unsaved work is autosaved every 30 seconds. If the app closes before you save, it offers to recover your work the next time it starts.
 
 **Lens.** With nothing selected, Properties shows the camera. Set the focal length, sensor (Super 35, Full Frame, Alexa 65, iPhone), f-stop and focus. **Focus on** pulls focus to a person or prop. The field of view and the in-focus range are calculated the way a real lens works.
@@ -71,6 +80,10 @@ Shots are numbered automatically. Type your own number (like "12A") to keep it, 
 |---|---|
 | Left-drag / right-drag / scroll | Orbit / pan / zoom (in camera view this moves the shot camera) |
 | Click, Shift+click | Select, add to selection |
+| Space / Shift+Space | Play shot / play all shots |
+| K | Add a camera keyframe at the playhead |
+| ← / → (Shift: 1 s) | Step one frame |
+| Home / End | Start / end of shot |
 | N | New shot (copy of the current one) |
 | [ / ] | Previous / next shot |
 | Ctrl+S / Ctrl+Shift+S | Save / Save as |
@@ -83,8 +96,8 @@ Shots are numbered automatically. Type your own number (like "12A") to keep it, 
 | L | Name labels on/off |
 | G | Rule-of-thirds guide on/off |
 | Ctrl+D | Duplicate |
-| Del | Delete |
+| Del | Delete (the selected keyframe first, else objects) |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
-| Esc | Leave joint posing, then clear the selection |
+| Esc | Stop playback, leave joint posing, then clear the selection |
 
 In Properties, drag a field's label left or right to scrub the value. Hold Shift for fine changes and Ctrl for coarse ones. Double-click an item in the scene list to rename it.

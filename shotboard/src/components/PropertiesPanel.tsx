@@ -2,10 +2,10 @@ import type { ReactNode } from 'react'
 import { Crosshair, RotateCcw, ScanEye, Video } from 'lucide-react'
 import type { Camera, JointName, PosePreset, SceneObject, SensorId, Vec3 } from '../shared/types'
 import { updateObject, type ObjectPatch } from '../commands/objects'
-import { updateCamera } from '../commands/project'
 import { APERTURE_PRESETS, FOCAL_PRESETS, SENSORS, depthOfField, fieldOfView, formatDistance } from '../camera/lens'
 import { JOINT_LABELS, POSE_LABELS, clonePose } from '../shared/poses'
 import { cameraFromView, focusOn } from '../store/actions'
+import { applyCameraChange, useDisplayCamera } from '../store/cameraActions'
 import { CustomFieldInput, TypeSelect, setShotDuration, setShotNotes } from './shotFields'
 import { EditableText } from './EditableText'
 import { CAMERA_ID, useActiveShot, useSelectedObjects, useStore } from '../store/store'
@@ -110,16 +110,14 @@ function CameraProperties() {
   const aspect = useStore((s) => s.project.settings.aspect)
   const viewMode = useStore((s) => s.viewMode)
   const setViewMode = useStore((s) => s.setViewMode)
-  const run = useStore((s) => s.run)
-  const cam = shot.camera
+  const playhead = useStore((s) => s.playhead)
+  const cam = useDisplayCamera()
   const fov = fieldOfView(cam.focalLength, cam.sensor, aspect)
   const dof = depthOfField(cam)
   const focusTargets = shot.scene.objects.filter((o) => o.kind !== 'plane')
+  const keyed = shot.keys.length > 0
 
-  const edit = (after: Partial<Camera>, label: string, mergeable = true) => {
-    const before = Object.fromEntries(Object.keys(after).map((k) => [k, cam[k as keyof Camera]])) as Partial<Camera>
-    run(updateCamera(shot.id, before, after, label, mergeable))
-  }
+  const edit = (after: Partial<Camera>, label: string, mergeable = true) => applyCameraChange(after, label, mergeable)
 
   return (
     <>
@@ -209,6 +207,11 @@ function CameraProperties() {
           onChange={(v) => edit({ rotation: v }, 'Rotate camera')}
         />
         <div className="hint-small">Angle: tilt, pan, roll. Height above floor: {cam.position[1].toFixed(2)} m</div>
+        {keyed && (
+          <div className="hint-small keyed-hint">
+            This shot has a camera move. Changes to position, angle, focal length or focus set a keyframe at {playhead.toFixed(2)}s.
+          </div>
+        )}
       </Section>
     </>
   )

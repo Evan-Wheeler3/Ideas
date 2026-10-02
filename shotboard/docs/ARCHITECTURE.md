@@ -81,6 +81,7 @@ interface Shot {
   scene: Scene;
   camera: Camera;
   keys: CameraKey[];             // empty = static shot
+  shake: { intensity: number; seed: number }; // handheld, deterministic
 }
 
 interface Scene {
@@ -121,6 +122,7 @@ interface Camera {
 }
 
 interface CameraKey {
+  id: string;
   t: number;                            // seconds
   position: [number, number, number];
   rotation: [number, number, number];

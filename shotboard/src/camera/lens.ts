@@ -93,3 +93,12 @@ export const formatDistance = (m: number): string =>
 
 export const lensLabel = (cam: Pick<Camera, 'focalLength' | 'aperture'>): string =>
   `${Math.round(cam.focalLength)}mm f/${cam.aperture}`
+
+/** Lens label for a whole shot: shows the range of focal lengths when the move zooms. */
+export function shotLensLabel(shot: { camera: Pick<Camera, 'focalLength' | 'aperture'>; keys: { focalLength: number }[] }): string {
+  if (!shot.keys.length) return lensLabel(shot.camera)
+  const focals = shot.keys.map((k) => Math.round(k.focalLength))
+  const lo = Math.min(...focals)
+  const hi = Math.max(...focals)
+  return `${lo === hi ? lo : `${lo}–${hi}`}mm f/${shot.camera.aperture}`
+}

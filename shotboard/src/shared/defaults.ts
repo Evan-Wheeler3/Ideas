@@ -69,7 +69,8 @@ export function makeShot(number: string): Shot {
       lightingPreset: 'none'
     },
     camera: makeCamera(),
-    keys: []
+    keys: [],
+    shake: { intensity: 0, seed: Math.floor(Math.random() * 10000) }
   }
 }
 

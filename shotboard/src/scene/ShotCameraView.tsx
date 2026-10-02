@@ -14,10 +14,12 @@ import { readTransform } from './Gizmo'
 interface Props {
   camera: Camera
   aspect: AspectRatio
+  /** While playing, the camera follows its move; dragging is off. */
+  locked?: boolean
   onCommit(patch: Partial<Camera>): void
 }
 
-export function ShotCameraView({ camera, aspect, onCommit }: Props) {
+export function ShotCameraView({ camera, aspect, locked, onCommit }: Props) {
   // Keep the camera object in state so the controls are built for *this* camera, not the editor one.
   const [cam, setCam] = useState<PerspectiveCameraImpl | null>(null)
   const size = useThree((s) => s.size)
@@ -49,6 +51,7 @@ export function ShotCameraView({ camera, aspect, onCommit }: Props) {
         <OrbitControls
           camera={cam}
           makeDefault
+          enabled={!locked}
           enableDamping={false}
           rotateSpeed={0.5}
           zoomSpeed={0.6}

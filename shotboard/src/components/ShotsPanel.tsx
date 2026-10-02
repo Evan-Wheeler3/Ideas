@@ -1,12 +1,13 @@
 // The shot list: a storyboard grid of thumbnails, or a table with configurable columns.
 // Click a shot to work on it; drag to reorder.
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { Copy, GripVertical, LayoutGrid, Plus, Rows3, Trash2 } from 'lucide-react'
+import { Copy, Film, GripVertical, LayoutGrid, Plus, Route, Rows3, Trash2, Vibrate } from 'lucide-react'
 import type { ColumnDef, Shot } from '../shared/types'
-import { lensLabel, aspectValue } from '../camera/lens'
+import { shotLensLabel, aspectValue } from '../camera/lens'
 import { useStore } from '../store/store'
 import { useThumbs } from '../store/thumbs'
 import { duplicateShot, newShot, removeShot, reorderShot } from '../store/shotActions'
+import { togglePlay } from '../store/cameraActions'
 import { Panel } from './Panel'
 import { EditableText } from './EditableText'
 import { ColumnsMenu } from './ColumnsMenu'
@@ -111,7 +112,18 @@ function GridView({ shots, activeId }: { shots: Shot[]; activeId: string }) {
             <span className="shot-type" title={typeLabel(shot.type)}>
               {shot.type}
             </span>
-            <span className="mono dim">{lensLabel(shot.camera)}</span>
+            <span className="mono dim">{shotLensLabel(shot)}</span>
+            <span className="spacer" />
+            {shot.keys.length >= 2 && (
+              <span className="shot-flag" title="Camera move">
+                <Route size={12} />
+              </span>
+            )}
+            {shot.shake.intensity > 0 && (
+              <span className="shot-flag" title="Handheld">
+                <Vibrate size={12} />
+              </span>
+            )}
           </div>
           <div className={`shot-notes${shot.notes ? '' : ' empty-notes'}`}>{shot.notes || 'No notes'}</div>
         </div>
@@ -133,7 +145,7 @@ function Cell({ col, shot, index }: { col: ColumnDef; shot: Shot; index: number 
     case 'type':
       return <TypeSelect shot={shot} className="select" />
     case 'lens':
-      return <span className="mono dim">{lensLabel(shot.camera)}</span>
+      return <span className="mono dim">{shotLensLabel(shot)}</span>
     case 'duration':
       return (
         <EditableText
@@ -234,6 +246,9 @@ export function ShotsPanel() {
               {columnsOpen && <ColumnsMenu anchor={columnsBtn} onClose={() => setColumnsOpen(false)} />}
             </>
           )}
+          <button className="panel-btn" onClick={() => togglePlay('sequence')} title="Play every shot in order as an animatic (Shift+Space)">
+            <Film size={13} /> Play all
+          </button>
           <button className="panel-btn" onClick={newShot} title="New shot from the current one (N)">
             <Plus size={13} /> New shot
           </button>

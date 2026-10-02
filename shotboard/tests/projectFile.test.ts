@@ -3,6 +3,8 @@ import JSZip from 'jszip'
 import { deserializeProject, serializeProject, validateProject, ProjectFileError } from '../src/persist/projectFile'
 import { makeSampleProject } from '../src/shared/sample'
 import { makeStarterProject } from '../src/shared/defaults'
+import { moveKeys } from '../src/camera/moves'
+import { poseOf } from '../src/camera/animate'
 import { SCHEMA_VERSION } from '../src/shared/types'
 
 // A 1×1 JPEG-ish payload is enough: the file stores whatever bytes the data URL holds.
@@ -11,6 +13,9 @@ const FAKE_JPEG = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xd
 describe('project file', () => {
   it('round-trips a project with thumbnails and imported models', async () => {
     const project = makeSampleProject()
+    let k = 0
+    project.shots[1].keys = moveKeys('dollyIn', poseOf(project.shots[1].camera), project.shots[1].duration, 1, () => `key${k++}`)
+    project.shots[1].shake = { intensity: 0.55, seed: 1234 }
     project.assets = { a1: { id: 'a1', name: 'Lamp post', file: 'assets/a1.glb' } }
     const model = new Uint8Array([103, 108, 84, 70, 2, 0, 0, 0]).buffer
     const thumbs = { [project.shots[0].id]: { url: FAKE_JPEG, hash: 'h1' } }

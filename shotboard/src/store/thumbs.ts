@@ -34,13 +34,13 @@ function fnv1a(text: string): string {
 // Shots are immutable, so a shot object's hash never changes. Cache it per object.
 const cache = new WeakMap<Shot, Map<string, string>>()
 
-/** What a shot's thumbnail depends on: its scene, its camera, and the frame shape. */
+/** What a shot's thumbnail depends on: its scene, its camera (and move), and the frame shape. */
 export function shotHash(shot: Shot, aspect: AspectRatio): string {
   let perAspect = cache.get(shot)
   if (!perAspect) cache.set(shot, (perAspect = new Map()))
   let h = perAspect.get(aspect)
   if (!h) {
-    h = fnv1a(JSON.stringify([shot.scene, shot.camera, aspect]))
+    h = fnv1a(JSON.stringify([shot.scene, shot.camera, shot.keys, aspect]))
     perAspect.set(aspect, h)
   }
   return h

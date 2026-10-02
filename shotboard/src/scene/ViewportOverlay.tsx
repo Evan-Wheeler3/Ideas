@@ -5,7 +5,8 @@ import type { ReactNode } from 'react'
 import type { AspectRatio } from '../shared/types'
 import type { Rect } from '../camera/gate'
 import { ASPECTS, SENSORS, depthOfField, fieldOfView, formatDistance } from '../camera/lens'
-import { updateCamera, updateSettings } from '../commands/project'
+import { updateSettings } from '../commands/project'
+import { applyCameraChange, useDisplayCamera } from '../store/cameraActions'
 import { CAMERA_ID, useActiveShot, useStore } from '../store/store'
 
 function Toggle({ on, onClick, title, children }: { on: boolean; onClick(): void; title: string; children: ReactNode }) {
@@ -61,7 +62,9 @@ function Guides({ gate }: { gate: Rect }) {
 function CameraHud({ gate }: { gate: Rect }) {
   const shot = useActiveShot()
   const aspect = useStore((s) => s.project.settings.aspect)
-  const cam = shot.camera
+  const playhead = useStore((s) => s.playhead)
+  const playing = useStore((s) => s.playing)
+  const cam = useDisplayCamera()
   const fov = fieldOfView(cam.focalLength, cam.sensor, aspect)
   const dof = depthOfField(cam)
   return (
@@ -78,6 +81,11 @@ function CameraHud({ gate }: { gate: Rect }) {
         </span>
       )}
       <span className="spacer" />
+      {(playing || shot.keys.length > 0) && (
+        <span className={playing ? 'hud-time playing' : 'hud-time'}>
+          {playhead.toFixed(1)} / {shot.duration.toFixed(1)}s
+        </span>
+      )}
       <span className="dim">{SENSORS[cam.sensor].label}</span>
       <span className="dim">{fov.h.toFixed(1)}° H</span>
       <span className="dim">{ASPECTS.find((a) => a.id === aspect)?.label}</span>
@@ -148,7 +156,7 @@ export function ViewportOverlay({ gate }: { gate: Rect }) {
               <Toggle
                 on={shot.camera.dof}
                 onClick={() =>
-                  run(updateCamera(shot.id, { dof: shot.camera.dof }, { dof: !shot.camera.dof }, 'Toggle depth of field', false))
+                  applyCameraChange({ dof: !shot.camera.dof }, shot.camera.dof ? 'Depth of field off' : 'Depth of field on')
                 }
                 title="Depth of field: blur what's out of focus"
               >

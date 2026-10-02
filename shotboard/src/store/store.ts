@@ -47,6 +47,13 @@ interface State {
   guides: Guides
   showLabels: boolean
   hoveredId: string | null
+  /** Time within the active shot, in seconds. */
+  playhead: number
+  playing: boolean
+  /** Play just this shot, or every shot in order (the animatic). */
+  playScope: 'shot' | 'sequence'
+  loop: boolean
+  selectedKeyId: string | null
 
   run(cmd: Command): void
   undo(): void
@@ -66,6 +73,11 @@ interface State {
   setGuides(patch: Partial<Guides>): void
   toggleLabels(): void
   setHovered(id: string | null): void
+  setPlayhead(t: number): void
+  play(scope: 'shot' | 'sequence'): void
+  pause(): void
+  setLoop(loop: boolean): void
+  selectKey(id: string | null): void
 }
 
 /** Keep the active shot valid after the shot list changes (e.g. the active shot was deleted). */
@@ -108,6 +120,11 @@ export const useStore = create<State>((set, get) => {
     guides: { thirds: true, safe: false, center: false, mask: 0.92 },
     showLabels: true,
     hoveredId: null,
+    playhead: 0,
+    playing: false,
+    playScope: 'shot',
+    loop: false,
+    selectedKeyId: null,
 
     run: (cmd) => {
       const s = get()
@@ -128,13 +145,17 @@ export const useStore = create<State>((set, get) => {
         selection: [],
         joint: null,
         hoveredId: null,
-        viewMode: 'editor'
+        viewMode: 'editor',
+        playhead: 0,
+        playing: false,
+        selectedKeyId: null
       })
     },
     markSaved: (file) => set((s) => ({ file, history: { ...s.history, savedAt: s.history.past.length, lastAt: 0 } })),
     setActiveShot: (id) => {
       if (id === get().activeShotId) return
-      set({ activeShotId: id, selection: [], joint: null, hoveredId: null })
+      // During sequence playback the player sets the playhead itself.
+      set({ activeShotId: id, selection: [], joint: null, hoveredId: null, selectedKeyId: null, playhead: 0 })
     },
     select: (ids) => set({ selection: ids, joint: null }),
     toggleSelect: (id) =>
@@ -151,7 +172,22 @@ export const useStore = create<State>((set, get) => {
       set({ selection: [objectId], joint: joint ? { objectId, joint } : null, gizmo: joint ? 'rotate' : get().gizmo }),
     setGuides: (patch) => set((s) => ({ guides: { ...s.guides, ...patch } })),
     toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
-    setHovered: (hoveredId) => set({ hoveredId })
+    setHovered: (hoveredId) => set({ hoveredId }),
+    setPlayhead: (t) => set({ playhead: Math.max(0, t) }),
+    play: (scope) => {
+      const s = get()
+      if (scope === 'sequence') {
+        // The animatic always starts from the first shot, looking through the camera.
+        set({ playing: true, playScope: 'sequence', activeShotId: s.project.shots[0].id, playhead: 0, selection: [], joint: null, viewMode: 'camera' })
+        return
+      }
+      const shot = s.project.shots.find((x) => x.id === s.activeShotId)
+      const atEnd = shot && s.playhead >= shot.duration - 1e-3
+      set({ playing: true, playScope: 'shot', playhead: atEnd ? 0 : s.playhead })
+    },
+    pause: () => set({ playing: false }),
+    setLoop: (loop) => set({ loop }),
+    selectKey: (selectedKeyId) => set({ selectedKeyId })
   }
 })
 
@@ -178,3 +214,6 @@ export const getActiveShot = (): Shot => {
   const s = useStore.getState()
   return s.project.shots.find((x) => x.id === s.activeShotId) ?? s.project.shots[0]
 }
+
+// Dev builds only: expose the store for debugging and the browser smoke test.
+if (import.meta.env.DEV) (window as unknown as { __shotboard: typeof useStore }).__shotboard = useStore

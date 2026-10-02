@@ -5,13 +5,14 @@ import { GizmoHelper, GizmoViewport, Grid, OrbitControls } from '@react-three/dr
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { DepthOfField, EffectComposer, Outline, Selection, SMAA } from '@react-three/postprocessing'
 import type { AspectRatio, Camera, JointName, Vec3 } from '../shared/types'
-import { updateCamera } from '../commands/project'
 import { updateObject } from '../commands/objects'
 import { activeArea, aspectValue, blurDiameter, depthOfField } from '../camera/lens'
 import { gateRect } from '../camera/gate'
 import { lookAtRotation } from '../camera/orient'
 import { CAMERA_ID, getActiveShot, useActiveShot, useStore, type GizmoMode } from '../store/store'
 import { importModelFiles } from '../store/actions'
+import { applyCameraChange, displayCamera, useDisplayCamera } from '../store/cameraActions'
+import { CameraPath } from './CameraPath'
 import { SELECT_COLOR, SceneObjectView, objectNodeName } from './SceneObjectView'
 import { jointNodeName } from './Mannequin'
 import { CameraRig } from './CameraRig'
@@ -47,7 +48,7 @@ function FrameSelection() {
 
   useEffect(() => {
     if (!request || !controls) return
-    const { selection, viewMode, run } = useStore.getState()
+    const { selection, viewMode } = useStore.getState()
     const shot = getActiveShot()
     const objectIds = selection.filter((id) => id !== CAMERA_ID)
     const ids = objectIds.length ? objectIds : shot.scene.objects.filter((o) => o.kind !== 'plane').map((o) => o.id)
@@ -56,18 +57,10 @@ function FrameSelection() {
     const center = box.getCenter(new Vector3())
 
     if (viewMode === 'camera') {
-      const from = shot.camera.position
+      const from = displayCamera().position
       const to: Vec3 = [center.x, center.y, center.z]
       const focus = Math.round(new Vector3(...from).distanceTo(center) * 100) / 100
-      run(
-        updateCamera(
-          shot.id,
-          { rotation: shot.camera.rotation, focusDistance: shot.camera.focusDistance },
-          { rotation: lookAtRotation(from, to), focusDistance: focus },
-          'Aim camera',
-          false
-        )
-      )
+      applyCameraChange({ rotation: lookAtRotation(from, to), focusDistance: focus }, 'Aim camera')
       return
     }
 
@@ -108,6 +101,8 @@ export function Viewport() {
   const viewMode = useStore((s) => s.viewMode)
   const gizmoMode = useStore((s) => s.gizmo)
   const gizmoSpace = useStore((s) => s.gizmoSpace)
+  const playing = useStore((s) => s.playing)
+  const cam = useDisplayCamera()
   const { select, toggleSelect, setHovered, selectJoint, run } = useStore.getState()
   const [size, setSize] = useState({ width: 1, height: 1 })
   const [dropping, setDropping] = useState(false)
@@ -152,15 +147,7 @@ export function Viewport() {
       const { joint: j, selection: sel } = useStore.getState()
       const pid = sel[sel.length - 1]
       if (pid === CAMERA_ID) {
-        run(
-          updateCamera(
-            s.id,
-            { position: s.camera.position, rotation: s.camera.rotation },
-            { position: t.position, rotation: t.rotation },
-            `${verb} camera`,
-            false
-          )
-        )
+        applyCameraChange({ position: t.position, rotation: t.rotation }, `${verb} camera`)
         return
       }
       const obj = s.scene.objects.find((o) => o.id === pid)
@@ -249,8 +236,8 @@ export function Viewport() {
           ))}
           <EffectComposer autoClear={false} multisampling={4}>
             <Outline visibleEdgeColor={SELECT_COLOR_HEX} hiddenEdgeColor={SELECT_HIDDEN_HEX} edgeStrength={inCamera ? 2.5 : 4} />
-            {inCamera && shot.camera.dof ? (
-              <LensDepthOfField camera={shot.camera} gateHeightPx={gate.height} aspect={aspect} />
+            {inCamera && cam.dof ? (
+              <LensDepthOfField camera={cam} gateHeightPx={gate.height} aspect={aspect} />
             ) : (
               <></>
             )}
@@ -260,7 +247,7 @@ export function Viewport() {
 
         <CameraRig
             hidden={inCamera}
-            camera={shot.camera}
+            camera={cam}
             aspect={aspect}
             selected={selection.includes(CAMERA_ID)}
             hovered={hoveredId === CAMERA_ID}
@@ -268,20 +255,12 @@ export function Viewport() {
             onHover={(on) => onHover(on ? CAMERA_ID : null)}
           />
 
-        {gizmo && <Gizmo key={gizmo.nodeName} {...gizmo} onCommit={commitGizmo} />}
+        {!inCamera && <CameraPath shot={shot} />}
+
+        {gizmo && !playing && <Gizmo key={gizmo.nodeName} {...gizmo} onCommit={commitGizmo} />}
 
         {inCamera ? (
-          <ShotCameraView
-            camera={shot.camera}
-            aspect={aspect}
-            onCommit={(patch) => {
-              const s = getActiveShot()
-              const before = Object.fromEntries(
-                Object.keys(patch).map((k) => [k, s.camera[k as keyof Camera]])
-              ) as Partial<Camera>
-              run(updateCamera(s.id, before, patch, 'Move camera', false))
-            }}
-          />
+          <ShotCameraView camera={cam} aspect={aspect} locked={playing} onCommit={(patch) => applyCameraChange(patch, 'Move camera')} />
         ) : (
           <>
             <OrbitControls

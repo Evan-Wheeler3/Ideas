@@ -367,6 +367,100 @@ try {
   await page.locator('.modal .btn.primary').click()
   check((await cards.count()) === 1 && (await page.locator('.tree-row', { hasText: 'Person' }).count()) === 1, 'New project starts a clean stage')
 
+  // ---- Milestone 4: camera moves and playback ----
+  await page.locator('.file-btn').click()
+  await page.locator('.menu-item', { hasText: 'Open sample project' }).click()
+  const keysOnTrack = () => page.locator('.tl-key').count()
+  const playheadText = async () => Number(await page.locator('.tl-time strong').textContent())
+  await cards.nth(1).click()
+  await page.keyboard.press('Escape')
+  check(await page.locator('.tl-empty').isVisible(), 'a shot with no move says how to add one')
+
+  await page.locator('.tl-btn', { hasText: 'Moves' }).click()
+  await page.locator('.move-btn', { hasText: 'Dolly in' }).click()
+  check((await keysOnTrack()) === 2, 'Dolly in preset adds a start and an end key')
+  check(await cards.nth(1).locator('.shot-flag').count() === 1, 'the shot card shows it has a camera move')
+  await page.keyboard.press('Home')
+  const zStart = await field('Position', 2).inputValue()
+  await page.keyboard.press('End')
+  const zEnd = await field('Position', 2).inputValue()
+  check(Number(zEnd) < Number(zStart) - 1, `scrubbing to the end shows the camera dollied in (z ${zStart} -> ${zEnd})`)
+  await page.keyboard.press('Home')
+  await page.keyboard.press('ArrowRight')
+  check(Math.abs((await playheadText()) - 1 / 24) < 0.01, 'arrow keys step one frame')
+
+  // Scrub to the middle and add a key; then change the lens there (updates that key, no new one).
+  const trackBox = await page.locator('.tl-track').boundingBox()
+  await page.mouse.click(trackBox.x + trackBox.width / 2, trackBox.y + trackBox.height - 6)
+  const mid = await playheadText()
+  check(Math.abs(mid - 2.5) < 0.1, `clicking the timeline scrubs (playhead ${mid}s)`)
+  await page.keyboard.press('k')
+  check((await keysOnTrack()) === 3, 'K adds a key at the playhead')
+  check(await page.locator('.key-tools').isVisible(), 'the new key is selected, with its easing shown')
+  await page.locator('.chip', { hasText: /^85$/ }).click()
+  check((await keysOnTrack()) === 3, 'changing the lens on a key updates that key')
+  await page.locator('.key-tools select').selectOption('linear')
+  check((await page.locator('.key-tools select').inputValue()) === 'linear', 'key easing can be changed')
+
+  // Auto-key: at a new time, changing the camera adds a key.
+  await page.mouse.click(trackBox.x + trackBox.width * 0.25, trackBox.y + trackBox.height - 6)
+  await page.locator('.chip', { hasText: /^50$/ }).click()
+  check((await keysOnTrack()) === 4, 'changing the camera at a new time adds a key (auto-key)')
+
+  // Drag a key to a new time.
+  const key = page.locator('.tl-key').nth(2)
+  const kb = await key.boundingBox()
+  await page.mouse.move(kb.x + kb.width / 2, kb.y + kb.height / 2)
+  await page.mouse.down()
+  for (let i = 1; i <= 6; i++) await page.mouse.move(kb.x + kb.width / 2 + i * 10, kb.y + kb.height / 2)
+  await page.mouse.up()
+  const keyTime = Number((await page.locator('.key-tools .mono').textContent()).replace('s', ''))
+  check(keyTime > 2.6, `dragging a key moves it in time (now ${keyTime}s)`)
+  await page.keyboard.press('Delete')
+  check((await keysOnTrack()) === 3, 'Delete removes the selected key')
+
+  await page.locator('.tl-select select').selectOption({ label: 'Rough' })
+  check(await cards.nth(1).locator('.shot-flag').count() === 2, 'handheld shake is shown on the card')
+
+  // Play the shot.
+  await page.keyboard.press('c')
+  await page.keyboard.press('Home')
+  // Loop, so the shot is still playing when checked even if software rendering is slow.
+  await page.locator('.tl-btn[title="Loop"]').click()
+  await page.keyboard.press(' ')
+  // Wait for the playhead to move (software rendering in CI can be slow to draw frames).
+  await page.waitForFunction(() => Number(document.querySelector('.tl-time strong')?.textContent) > 0.3, null, { timeout: 15000 }).catch(() => {})
+  const during = await playheadText()
+  check(during > 0.5, `Space plays the shot (playhead at ${during}s)`)
+  check(await page.locator('.hud-time.playing').isVisible(), 'the camera view shows running time while playing')
+  await page.screenshot({ path: `${OUT}/m4-playing.png` })
+  await page.keyboard.press(' ')
+  await page.waitForTimeout(300)
+  const paused = await playheadText()
+  await page.waitForTimeout(800)
+  const isPlaying = () => page.evaluate(() => window.__shotboard.getState().playing)
+  check((await playheadText()) === paused && !(await isPlaying()), 'Space pauses')
+  await page.locator('.tl-btn[title="Loop"]').click()
+
+  await page.locator('.tl-btn', { hasText: 'Clear move' }).click()
+  check((await keysOnTrack()) === 0, 'Clear move removes all keys')
+  await page.keyboard.press('Control+z')
+  check((await keysOnTrack()) === 3, 'undo brings the move back')
+
+  // Play the whole sequence as an animatic.
+  await page.keyboard.press('Shift+ ')
+  check((await page.locator('.shot-card.active .shot-badge').textContent()) === '1', 'Play all starts from shot 1')
+  await page.waitForFunction(() => document.querySelector('.shot-card.active .shot-badge')?.textContent !== '1', null, { timeout: 20000 }).catch(() => {})
+  const shotNow = Number(await page.locator('.shot-card.active .shot-badge').textContent())
+  check(shotNow >= 2, `the animatic cuts to the next shots (now on shot ${shotNow})`)
+  await page.keyboard.press('Escape')
+  check(await page.locator('.tl-btn.on', { hasText: 'All' }).count() === 0, 'Esc stops playback')
+  await page.keyboard.press('c')
+  await page.locator('.shot-card').nth(1).click()
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: `${OUT}/m4-editor.png` })
+
   check(errors.length === 0, `no console errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
   await browser.close()
 } catch (e) {

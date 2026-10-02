@@ -106,7 +106,13 @@ export function validateProject(raw: unknown): Project {
       duration: typeof s.duration === 'number' && s.duration > 0 ? s.duration : 3,
       notes: typeof s.notes === 'string' ? s.notes : '',
       fields: isObj(s.fields) ? (s.fields as Shot['fields']) : {},
-      keys: Array.isArray(s.keys) ? (s.keys as Shot['keys']) : [],
+      keys: Array.isArray(s.keys)
+        ? (s.keys as Shot['keys'])
+            .filter((k) => isObj(k) && typeof k.t === 'number' && isVec3(k.position) && isVec3(k.rotation))
+            .map((k, j) => ({ ...k, ease: k.ease ?? 'easeInOut', id: typeof k.id === 'string' ? k.id : `k${j}` }))
+            .sort((a, b) => a.t - b.t)
+        : [],
+      shake: isObj(s.shake) && typeof s.shake.intensity === 'number' ? (s.shake as unknown as Shot['shake']) : { intensity: 0, seed: 1 },
       camera: cam as unknown as Shot['camera'],
       scene: {
         environment: { preset: 'studio', background: 'color', color: '#1b1d22' },

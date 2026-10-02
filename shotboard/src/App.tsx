@@ -11,6 +11,8 @@ import { Viewport } from './scene/Viewport'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useKeyboardShortcuts } from './keymap'
 import { useStore } from './store/store'
+import { Timeline } from './components/Timeline'
+import { usePlayback } from './store/cameraActions'
 
 function StatusBar() {
   const count = useStore((s) => s.selection.length)
@@ -23,7 +25,7 @@ function StatusBar() {
       <span>{viewMode === 'camera' ? 'Camera view' : 'Editor view'}</span>
       <span className="spacer" />
       <span className="dim">
-        <kbd>N</kbd> new shot · <kbd>[</kbd> <kbd>]</kbd> prev/next shot · <kbd>C</kbd> camera view · <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> move/rotate/scale · <kbd>F</kbd> frame · <kbd>L</kbd> labels ·{' '}
+        <kbd>Space</kbd> play · <kbd>K</kbd> key · <kbd>N</kbd> new shot · <kbd>[</kbd> <kbd>]</kbd> prev/next shot · <kbd>C</kbd> camera view · <kbd>W</kbd> <kbd>E</kbd> <kbd>R</kbd> move/rotate/scale · <kbd>F</kbd> frame · <kbd>L</kbd> labels ·{' '}
         <kbd>X</kbd> snap · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Del</kbd> delete
       </span>
     </footer>
@@ -33,6 +35,7 @@ function StatusBar() {
 export function App() {
   useKeyboardShortcuts()
   useProjectLifecycle()
+  usePlayback()
 
   return (
     <div className="app">
@@ -53,6 +56,8 @@ export function App() {
             </Panel>
             <Separator className="resize-handle vertical" />
             <Panel minSize="30%">
+              <Group orientation="vertical" id="sb-center">
+                <Panel minSize="40%">
               <ErrorBoundary
                 fallback={(e) => (
                   <div className="viewport viewport-error">
@@ -67,6 +72,12 @@ export function App() {
               >
                 <Viewport />
               </ErrorBoundary>
+                </Panel>
+                <Separator className="resize-handle horizontal" />
+                <Panel defaultSize="104px" minSize="96px" maxSize="200px">
+                  <Timeline />
+                </Panel>
+              </Group>
             </Panel>
             <Separator className="resize-handle vertical" />
             <Panel defaultSize="290px" minSize="230px" maxSize="460px">

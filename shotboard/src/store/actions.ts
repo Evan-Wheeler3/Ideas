@@ -6,10 +6,10 @@ import { catalogItem, PERSON_COLORS } from '../shared/catalog'
 import type { SceneObject, Vec3 } from '../shared/types'
 import { composite, type Command } from '../commands/command'
 import { addObject, deleteObjects, duplicateObjects } from '../commands/objects'
-import { updateCamera } from '../commands/project'
 import { lookAtRotation } from '../camera/orient'
 import { editorView } from '../scene/ShotCameraView'
 import { putAsset } from './assets'
+import { applyCameraChange, displayCamera } from './cameraActions'
 import { toast } from '../components/Dialogs'
 import { getActiveShot, useStore } from './store'
 
@@ -72,13 +72,10 @@ export function duplicateSelection(): void {
 
 /** Put the shot camera where the editor view is, looking at the same point. */
 export function cameraFromView(): void {
-  const shot = getActiveShot()
   const pos: Vec3 = [r2(editorView.position.x), r2(editorView.position.y), r2(editorView.position.z)]
   const target: Vec3 = [editorView.target.x, editorView.target.y, editorView.target.z]
   const focus = r2(editorView.position.distanceTo(editorView.target))
-  const before = { position: shot.camera.position, rotation: shot.camera.rotation, focusDistance: shot.camera.focusDistance }
-  const after = { position: pos, rotation: lookAtRotation(pos, target), focusDistance: focus }
-  useStore.getState().run(updateCamera(shot.id, before, after, 'Camera from view', false))
+  applyCameraChange({ position: pos, rotation: lookAtRotation(pos, target), focusDistance: focus }, 'Camera from view')
 }
 
 /** Pull focus to an object (distance from the camera to its middle). Optionally aim at it too. */
@@ -89,13 +86,13 @@ export function focusOn(objectId: string, aim = false): void {
   // Aim for chest/eye height on people, the middle of anything else.
   const height = obj.kind === 'mannequin' ? 1.45 * obj.scale[1] + (obj.pose?.hipsY ?? 0) : obj.position[1] + 0.4 * obj.scale[1]
   const target = new Vector3(obj.position[0], Math.max(height, obj.position[1]), obj.position[2])
-  const from = new Vector3(...shot.camera.position)
+  const cam = displayCamera()
+  const from = new Vector3(...cam.position)
   const after = {
     focusDistance: r2(from.distanceTo(target)),
-    ...(aim ? { rotation: lookAtRotation(shot.camera.position, target.toArray() as Vec3) } : {})
+    ...(aim ? { rotation: lookAtRotation(cam.position, target.toArray() as Vec3) } : {})
   }
-  const before = { focusDistance: shot.camera.focusDistance, ...(aim ? { rotation: shot.camera.rotation } : {}) }
-  useStore.getState().run(updateCamera(shot.id, before, after, aim ? `Aim at ${obj.name}` : `Focus on ${obj.name}`, false))
+  applyCameraChange(after, aim ? `Aim at ${obj.name}` : `Focus on ${obj.name}`)
 }
 
 /** Import .glb/.gltf files, add them to the project's assets and drop them into the scene. */

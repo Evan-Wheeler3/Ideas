@@ -44,7 +44,17 @@ export interface Shot {
   fields: Record<string, string | number>
   scene: Scene
   camera: Camera
+  /** Camera keyframes, sorted by time. Empty = the camera holds still (uses `camera`). */
   keys: CameraKey[]
+  /** Procedural handheld shake layered on top of the camera move. */
+  shake: Shake
+}
+
+export interface Shake {
+  /** 0 = off, 1 = rough. */
+  intensity: number
+  /** Fixed seed, so playback and export always shake the same way. */
+  seed: number
 }
 
 export type EnvironmentPreset = 'studio' | 'day' | 'sunset' | 'night'
@@ -115,7 +125,13 @@ export interface Camera {
 
 export type Ease = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut'
 
+/**
+ * A camera keyframe. `ease` shapes the move from this key to the next one.
+ * Lens settings other than focal length and focus (sensor, aperture, DoF) come from Shot.camera.
+ */
 export interface CameraKey {
+  id: string
+  /** Seconds from the start of the shot. */
   t: number
   position: Vec3
   rotation: Vec3
