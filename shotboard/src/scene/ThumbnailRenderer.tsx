@@ -1,7 +1,7 @@
 // Renders shot thumbnails in a small hidden canvas, through each shot's own camera.
 // It works through shots whose picture is missing or out of date (active shot first), one at a
 // time, once edits have paused for a moment. Results go to the thumbs store as JPEG data URLs.
-import { Suspense, useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { PCFShadowMap, type PerspectiveCamera } from 'three'
 import { Canvas, useThree } from '@react-three/fiber'
 import type { AspectRatio, Shot } from '../shared/types'
@@ -10,16 +10,10 @@ import { cameraEuler } from '../camera/orient'
 import { keyedPose } from '../camera/animate'
 import { useStore } from '../store/store'
 import { shotHash, useThumbs } from '../store/thumbs'
-import { assetUrl } from '../store/assets'
-import { LightSource, SceneEnvironment } from './Lighting'
-import { Mannequin } from './Mannequin'
-import { PropModel } from './Props'
-import { ImportedModel, MissingModel, SHAPES, Shape } from './SceneObjectView'
+import { ShotContent } from './ShotContent'
 
 export const THUMB_WIDTH = 480
 const SETTLE_MS = 600
-const DEG = Math.PI / 180
-const noop = () => {}
 
 function ShotCamera({ shot, aspect }: { shot: Shot; aspect: AspectRatio }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera
@@ -58,26 +52,9 @@ function ShotScene({ shot, aspect, onDone }: { shot: Shot; aspect: AspectRatio; 
   return (
     <>
       <ShotCamera shot={shot} aspect={aspect} />
-      <SceneEnvironment env={shot.scene.environment} />
-      <Suspense fallback={null}>
-        {shot.scene.objects
-          .filter((o) => o.visible)
-          .map((o) => {
-            const url = o.assetId ? assetUrl(o.assetId) : undefined
-            return (
-              <group key={o.id} position={o.position} rotation={[o.rotation[0] * DEG, o.rotation[1] * DEG, o.rotation[2] * DEG]} scale={o.scale}>
-                {o.kind === 'prop' && o.propId && <PropModel propId={o.propId} color={o.color} />}
-                {o.kind === 'mannequin' && o.pose && (
-                  <Mannequin objectId={o.id} pose={o.pose} color={o.color} showHandles={false} selectedJoint={null} onPickJoint={noop} />
-                )}
-                {o.kind === 'model' && (url ? <ImportedModel url={url} /> : <MissingModel />)}
-                {SHAPES.has(o.kind) && <Shape kind={o.kind} color={o.color} />}
-                {o.kind === 'light' && o.light && <LightSource obj={o} />}
-              </group>
-            )
-          })}
+      <ShotContent shot={shot}>
         <Capture onDone={onDone} />
-      </Suspense>
+      </ShotContent>
     </>
   )
 }

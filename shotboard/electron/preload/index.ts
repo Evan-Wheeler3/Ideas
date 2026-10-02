@@ -15,7 +15,11 @@ const api = {
   readAutosave: (): Promise<(FileRef & { data: Uint8Array; savedAt: number }) | null> => ipcRenderer.invoke('autosave:read'),
   writeAutosave: (data: Uint8Array, file: FileRef): Promise<void> => ipcRenderer.invoke('autosave:write', data, file),
   clearAutosave: (): Promise<void> => ipcRenderer.invoke('autosave:clear'),
-  setTitle: (title: string): void => ipcRenderer.send('window:title', title)
+  setTitle: (title: string): void => ipcRenderer.send('window:title', title),
+  sidecar: (): Promise<{ url: string; token: string } | { error: string }> => ipcRenderer.invoke('sidecar:info'),
+  saveExport: (data: Uint8Array, suggestedName: string, kind: 'pdf' | 'mp4' | 'zip'): Promise<string | null> =>
+    ipcRenderer.invoke('file:save', data, suggestedName, kind),
+  reveal: (path: string): Promise<void> => ipcRenderer.invoke('file:reveal', path)
 }
 
 contextBridge.exposeInMainWorld('shotboard', api)

@@ -22,7 +22,13 @@ export interface Platform {
   writeAutosave(data: Uint8Array, file: FileRef): Promise<void>
   clearAutosave(): Promise<void>
   setWindowTitle(title: string): void
+  /** Where the export helper is running, or why it isn't. */
+  sidecar(): Promise<SidecarInfo>
+  /** Save an exported file; returns where it went (a path, or the download name in the browser). */
+  saveExport(data: Uint8Array, name: string, kind: 'pdf' | 'mp4' | 'zip'): Promise<string | null>
 }
+
+export type SidecarInfo = { url: string; token: string } | { error: string }
 
 declare global {
   interface Window {
@@ -43,7 +49,9 @@ function electronPlatform(api: ShotBoardApi): Platform {
     readAutosave: () => api.readAutosave(),
     writeAutosave: (data, file) => api.writeAutosave(data, file),
     clearAutosave: () => api.clearAutosave(),
-    setWindowTitle: (title) => api.setTitle(title)
+    setWindowTitle: (title) => api.setTitle(title),
+    sidecar: () => api.sidecar(),
+    saveExport: (data, name, kind) => api.saveExport(data, name, kind)
   }
 }
 
@@ -77,6 +85,36 @@ function pickFile(accept: string): Promise<File | null> {
   })
 }
 
+function download(data: Uint8Array, name: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([data as BlobPart], { type }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  // Chrome only honours the file name reliably for links that are in the page.
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
+
+/**
+ * In the browser build the export helper is started by hand (`npm run server`) on a fixed port.
+ * `?sidecar=http://host:port&token=...` in the URL points elsewhere.
+ */
+async function webSidecar(): Promise<SidecarInfo> {
+  const q = new URLSearchParams(location.search)
+  const url = q.get('sidecar') ?? 'http://127.0.0.1:8765'
+  const token = q.get('token') ?? 'dev'
+  try {
+    const r = await fetch(`${url}/health`, { headers: { 'X-ShotBoard-Token': token } })
+    if (r.ok) return { url, token }
+    return { error: `The export helper at ${url} answered ${r.status}.` }
+  } catch {
+    return { error: `The export helper isn't running. Start it with "npm run server".` }
+  }
+}
+
 function webPlatform(): Platform {
   return {
     kind: 'web',
@@ -87,12 +125,7 @@ function webPlatform(): Platform {
     },
     async saveProject(data, file) {
       // Browsers can't write to a chosen path, so saving downloads the file.
-      const url = URL.createObjectURL(new Blob([data as BlobPart], { type: 'application/zip' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = withExt(file.name)
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      download(data, withExt(file.name), 'application/zip')
       return { path: null, name: baseName(file.name) }
     },
     readAutosave: () => idb<AutosaveEntry | undefined>('readonly', (s) => s.get('latest')).then((e) => e ?? null),
@@ -102,7 +135,12 @@ function webPlatform(): Platform {
     async clearAutosave() {
       await idb('readwrite', (s) => s.delete('latest'))
     },
-    setWindowTitle: (title) => void (document.title = title)
+    setWindowTitle: (title) => void (document.title = title),
+    sidecar: webSidecar,
+    async saveExport(data, name, kind) {
+      download(data, name, { pdf: 'application/pdf', mp4: 'video/mp4', zip: 'application/zip' }[kind])
+      return name
+    }
   }
 }
 

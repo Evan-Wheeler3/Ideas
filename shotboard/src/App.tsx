@@ -6,6 +6,8 @@ import { PropertiesPanel } from './components/PropertiesPanel'
 import { ShotsPanel } from './components/ShotsPanel'
 import { DialogHost } from './components/Dialogs'
 import { ShortcutsDialog } from './components/ShortcutsDialog'
+import { ExportDialog } from './components/ExportDialog'
+import { FrameRendererHost } from './export/FrameRenderer'
 import { ThumbnailRenderer } from './scene/ThumbnailRenderer'
 import { useProjectLifecycle } from './persist/fileActions'
 import { Viewport } from './scene/Viewport'
@@ -95,6 +97,8 @@ export function App() {
       <ThumbnailRenderer />
       <DialogHost />
       <ShortcutsDialog />
+      <ExportDialog />
+      <FrameRendererHost />
     </div>
   )
 }

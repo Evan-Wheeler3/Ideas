@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { registerIpc } from './ipc'
+import { stopSidecar } from './sidecar'
 
 // Machines without a usable GPU (VMs, CI) fall back to software WebGL instead of failing.
 if (process.env.SHOTBOARD_SOFTWARE_GL) {
@@ -61,7 +62,11 @@ function createWindow(): void {
             const auto = await api.readAutosave()
             await api.clearAutosave()
             const cleared = await api.readAutosave()
-            return JSON.stringify({ saved, autoName: auto && auto.name, autoBytes: auto && auto.data.length, cleared })
+            const helper = await api.sidecar()
+            const health = 'url' in helper
+              ? await (await fetch(helper.url + '/health', { headers: { 'X-ShotBoard-Token': helper.token } })).json()
+              : helper
+            return JSON.stringify({ saved, autoName: auto && auto.name, autoBytes: auto && auto.data.length, cleared, health })
           })()`)
           console.log('SELFTEST', result)
         }
@@ -105,6 +110,8 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
+
+app.on('will-quit', stopSidecar)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

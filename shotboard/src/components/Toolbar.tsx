@@ -2,9 +2,11 @@ import { useRef, useState, type ReactNode } from 'react'
 import {
   Clapperboard, ChevronDown, FilePlus2, FolderOpen, Globe, Magnet, Move3d, Redo2, Rotate3d, Save, Scale3d, Sparkles, Undo2,
   Keyboard,
+  Download,
   Box as BoxIcon
 } from 'lucide-react'
 import { toggleShortcuts } from './ShortcutsDialog'
+import { openExportDialog } from './ExportDialog'
 import { useDirty, useStore, type GizmoMode } from '../store/store'
 import { newProject, openProject, openSampleProject, saveProject } from '../persist/fileActions'
 import { renameProject } from '../commands/shots'
@@ -139,6 +141,9 @@ export function Toolbar() {
       </div>
 
       <div className="spacer" />
+      <button className="btn primary export-btn" onClick={openExportDialog} title="Export a shot list PDF, stills or an MP4 animatic (Ctrl+E)">
+        <Download size={14} /> Export
+      </button>
       <ToolButton title="Keyboard shortcuts (?)" onClick={toggleShortcuts}>
         <Keyboard size={16} />
       </ToolButton>

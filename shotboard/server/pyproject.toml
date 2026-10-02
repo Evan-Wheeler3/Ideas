@@ -1,0 +1,8 @@
+[project]
+name = "shotboard-server"
+version = "0.1.0"
+description = "ShotBoard export helper: shot list PDFs and MP4 animatics"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

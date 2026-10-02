@@ -1,5 +1,6 @@
 // File handling for the renderer: open/save dialogs, safe writes, and autosave.
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { startSidecar } from './sidecar'
 import { copyFile, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
 
@@ -69,6 +70,24 @@ export function registerIpc(): void {
   ipcMain.handle('autosave:clear', async () => {
     await rm(autosaveDir(), { recursive: true, force: true })
   })
+
+  ipcMain.handle('sidecar:info', () => startSidecar())
+
+  // Save an exported file (PDF, MP4, ZIP) where the user chooses.
+  ipcMain.handle('file:save', async (e, data: Uint8Array, suggestedName: string, kind: string) => {
+    const win = BrowserWindow.fromWebContents(e.sender)!
+    const filters = {
+      pdf: [{ name: 'PDF', extensions: ['pdf'] }],
+      mp4: [{ name: 'MP4 video', extensions: ['mp4'] }],
+      zip: [{ name: 'ZIP archive', extensions: ['zip'] }]
+    }[kind] ?? []
+    const res = await dialog.showSaveDialog(win, { title: 'Export', defaultPath: join(app.getPath('documents'), suggestedName), filters })
+    if (res.canceled || !res.filePath) return null
+    await writeFile(res.filePath, data)
+    return res.filePath
+  })
+
+  ipcMain.handle('file:reveal', (_e, path: string) => shell.showItemInFolder(path))
 
   ipcMain.on('window:title', (e, title: string) => {
     BrowserWindow.fromWebContents(e.sender)?.setTitle(title)

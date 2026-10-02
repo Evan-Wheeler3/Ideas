@@ -13,7 +13,10 @@
     "test": "vitest run",
     "smoke": "node scripts/smoke.mjs",
     "smoke:electron": "electron-vite build && SHOTBOARD_SOFTWARE_GL=1 SHOTBOARD_SCREENSHOT=test-output/electron.png xvfb-run -a electron . --no-sandbox",
-    "check": "npm run typecheck && npm test && npm run smoke"
+    "check": "npm run typecheck && npm test && npm run smoke",
+    "server": "node scripts/server.mjs",
+    "test:server": "node scripts/server.mjs --pytest",
+    "test:export": "node scripts/export-test.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

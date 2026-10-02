@@ -45,6 +45,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       [`${MOD}+Z / ${MOD}+Shift+Z`, 'Undo / redo'],
       [`${MOD}+S / ${MOD}+Shift+S`, 'Save / save as'],
       [`${MOD}+O / ${MOD}+N`, 'Open / new project'],
+      [`${MOD}+E`, 'Export (PDF, stills, MP4)'],
       ['?', 'This list']
     ]
   }

@@ -8,37 +8,41 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design and data model.
 
 ## Status
 
-| Milestone | State |
-|---|---|
-| 1. Viewport and gizmos | Done |
-| 2. Lens and camera view | Done |
-| 3. Shots and saving | Done |
-| 4. Keyframes and timeline | Done |
-| 5. Lighting and polish | Done |
-| 6. Export (PDF, PNG, MP4) | Next |
+All six milestones are built: viewport and gizmos, lens and camera view, shots and saving, keyframes and timeline, lighting, and export.
 
-## Run it
+## Install
 
-Needs Node 20 or newer.
+Needs **Node.js 20+**. **Python 3.11+** is needed only for PDF and MP4 export. ffmpeg is optional; a bundled copy is used if it isn't installed.
 
 ```bash
 cd shotboard
-npm install
-npm run dev        # opens the desktop app with hot reload
+./scripts/setup.sh            # macOS / Linux
+# or, on Windows (PowerShell):
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 ```
 
-`npm run web` runs only the UI in your browser at http://localhost:5199. It's handy for quick UI work.
+The setup script installs the npm packages, creates `server/.venv` with the export helper's Python packages, and checks for ffmpeg.
+
+## Run it
+
+```bash
+npm run dev        # the desktop app (it starts the export helper by itself)
+```
+
+`npm run web` runs only the UI in a browser at http://localhost:5199, which is handy for quick UI work. In that mode, start the export helper separately with `npm run server`.
+
+If the 3D view won't start on a machine without a working GPU (a VM, for example), launch with `SHOTBOARD_SOFTWARE_GL=1 npm run dev`.
 
 ## Checks
 
 ```bash
-npm run typecheck  # TypeScript
-npm test           # unit tests (undo/redo, lens math, camera moves, lighting, shot list, project files)
-npm run smoke      # drives the UI in headless Chromium, saves screenshots to test-output/
-npm run smoke:electron  # Linux only: launches the real app under xvfb and saves a screenshot
+npm run typecheck       # TypeScript
+npm test                # unit tests (undo/redo, lens math, camera moves, lighting, shot list, project files)
+npm run test:server     # export helper tests (pytest): token check, PDF layouts, a real MP4 encode
+npm run smoke           # drives the whole UI in headless Chromium, saves screenshots to test-output/
+npm run test:export     # end to end: exports a PDF, stills and an MP4 from the sample project and checks them
+npm run smoke:electron  # Linux: launches the real desktop app under xvfb and saves a screenshot
 ```
-
-If the 3D view won't start on a machine without a working GPU (a VM, for example), launch with `SHOTBOARD_SOFTWARE_GL=1 npm run dev`.
 
 ## Using it
 
@@ -80,6 +84,13 @@ You can also add your own lights from the Add panel: Spot, Soft panel, Practical
 
 Ambient occlusion (soft shading where objects meet) is on by default. Turn it off with the **AO** button on slow machines. Click a section title in Properties to fold it away.
 
+**Export.** Click **Export** in the toolbar (Ctrl+E):
+- **Shot list PDF:** a storyboard sheet (3×2 frames per page with number, type, lens, length, notes and your columns), or a table. Letter or A4.
+- **Stills:** a ZIP with one PNG per shot, HD or 4K.
+- **Animatic MP4:** every shot in order with its camera moves and shake, at 960, 1280 or 1920 wide. Shot number, type, lens and timecode can be burned in.
+
+Every export is rendered through each shot's own camera. Depth of field and ambient occlusion are shown in the viewport only, not in exports.
+
 **Saving.** **File → Save** writes one `.shotboard` file. It contains the shots, thumbnails and any imported models, so you can send it to someone. Each save keeps the previous version next to it as `.shotboard.bak`. Unsaved work is autosaved every 30 seconds. If the app closes before you save, it offers to recover your work the next time it starts.
 
 **Lens.** With nothing selected, Properties shows the camera. Set the focal length, sensor (Super 35, Full Frame, Alexa 65, iPhone), f-stop and focus. **Focus on** pulls focus to a person or prop. The field of view and the in-focus range are calculated the way a real lens works.
@@ -112,3 +123,13 @@ Ambient occlusion (soft shading where objects meet) is on by default. Turn it of
 | ? | Show all keyboard shortcuts |
 
 In Properties, drag a field's label left or right to scrub the value. Hold Shift for fine changes and Ctrl for coarse ones. Double-click an item in the scene list to rename it.
+
+## Troubleshooting
+
+- **"Export helper isn't running"**: run the setup script, or check that `server/.venv` exists. The desktop app finds it there. To use a different Python, set `SHOTBOARD_PYTHON=/path/to/python`.
+- **Slow in a VM or remote desktop:** turn off **AO** in the viewport toolbar, and use Draft size for animatics.
+- **Project won't open:** the error message says why. If the app closed unexpectedly, the next launch offers to recover from autosave, and each save keeps the previous version as `*.shotboard.bak`.
+
+## Not in this version
+
+Camera keyframes only (people and props don't animate yet). There's no IK posing, collaboration, FBX import (convert to `.glb`), script import, or signed installers. "Send to Blender" is a possible next step.

@@ -1111,3 +1111,26 @@ textarea.editable { min-height: 60px; line-height: 1.45; background: var(--bg-2)
 .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; }
 .shortcut-row { display: flex; align-items: baseline; gap: 10px; padding: 3px 6px; color: var(--text-dim); }
 .shortcut-row kbd { flex: none; min-width: 120px; text-align: left; border: 0; padding: 0; color: var(--text); font-size: 11px; }
+
+/* ---------- Export ---------- */
+.export-btn { height: 28px; }
+.modal.export-modal { width: 760px; }
+.helper-status { display: flex; align-items: center; gap: 6px; padding: 7px 10px; margin-bottom: 12px; border-radius: 6px; background: var(--bg-2); color: var(--text-dim); font-size: 11.5px; }
+.helper-status.ok { color: #6fcf7f; }
+.helper-status.bad { color: #f0a35a; }
+.helper-status .dim { color: var(--text-faint); }
+.export-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.export-card { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; }
+.export-card-head { display: flex; gap: 10px; color: var(--accent); }
+.export-card-title { font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.export-card-text { font-size: 11px; line-height: 1.45; color: var(--text-dim); }
+.export-card-options { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; align-content: flex-start; }
+.export-card .btn.primary { height: 30px; }
+.export-progress { margin-top: 12px; padding: 10px; border-radius: 6px; background: var(--bg-0); border: 1px solid var(--line); }
+.export-progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.bar { height: 6px; border-radius: 3px; background: var(--bg-3); overflow: hidden; }
+.bar > div { height: 100%; background: var(--accent); transition: width 0.2s; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.export-modal .hint-small { margin-top: 10px; }
+.frame-renderer { position: fixed; left: -20000px; top: 0; pointer-events: none; }

@@ -524,6 +524,14 @@ try {
   await page.waitForTimeout(800)
   await page.screenshot({ path: `${OUT}/m5-editor.png` })
 
+  // ---- Milestone 6: export dialog (the full exports run in npm run test:export) ----
+  await page.keyboard.press('Control+e')
+  check(await page.locator('.export-modal').isVisible(), 'Ctrl+E opens the export dialog')
+  await page.waitForSelector('.helper-status.ok, .helper-status.bad', { timeout: 15000 })
+  check(await page.locator('.export-card').count() === 3, 'it offers PDF, stills and MP4')
+  await page.keyboard.press('Escape')
+  check(await page.locator('.export-modal').count() === 0, 'Esc closes the export dialog')
+
   check(errors.length === 0, `no console errors${errors.length ? ': ' + errors.join(' | ') : ''}`)
   await browser.close()
 } catch (e) {

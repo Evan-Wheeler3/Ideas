@@ -153,15 +153,28 @@ Every change to the project goes through a command (`do` / `undo` / `label`). A 
 
 Preset buttons add keys from the current camera: dolly, pan, tilt, crane, orbit, push-in. Handheld shake is a simple seeded wobble, so the preview and the export match.
 
-## Export helper (Python, `/server`)
+## Export
 
-The app renders the frames itself, so they match the viewport. The helper only assembles them:
+The app renders every exported picture itself, in a hidden canvas through each shot's camera (moves and handheld shake included), so exports match what you framed. `src/export/FrameRenderer.tsx` renders frames, and `src/export/exporters.ts` runs the three exports:
 
-- `POST /pdf`: shot list PDF using the visible columns, in list or storyboard-grid layout
-- `POST /animatic`: PNG frames → MP4 (ffmpeg, H.264), with an optional shot number burn-in
-- `GET /health`
+| Export | Done by | Output |
+|---|---|---|
+| Shot list PDF | App renders one frame per shot; helper lays out the PDF (ReportLab) | Storyboard sheet (3×2 panels per page) or a table, using the visible columns |
+| Stills | App only (no helper needed) | ZIP with one PNG per shot, HD or 4K |
+| Animatic MP4 | App renders every frame and uploads it; helper burns in shot info (Pillow) and encodes H.264 (ffmpeg) | MP4 at the project frame rate, 960/1280/1920 wide |
 
-It accepts connections only from the same machine, needs a random token each launch, and Electron starts and stops it automatically.
+### Export helper (Python, `/server`)
+
+FastAPI on `127.0.0.1` only. Every request needs the `X-ShotBoard-Token` header.
+
+- `GET /health`: version and whether ffmpeg was found
+- `POST /pdf`: shot list JSON (with base64 pictures) in, PDF out
+- `POST /animatic`: start a job (`fps`, size, burn-in, shots with frame counts)
+- `PUT /animatic/{id}/frames/{n}`: upload frame *n* (JPEG)
+- `POST /animatic/{id}/finish`: burn-in and encode in the background
+- `GET /jobs/{id}`: state and progress. `GET /jobs/{id}/file` returns the MP4. `DELETE /jobs/{id}` cancels the job and removes its temp files.
+
+The desktop app starts the helper itself (`electron/main/sidecar.ts`). It uses `server/.venv` if setup created it, picks a free port and a random token, waits for the `SHOTBOARD_READY` line, and restarts the helper if it crashes (up to 3 times). It stops the helper on quit. In the browser build, `npm run server` runs it on port 8765 with the token `dev`. If the helper isn't available, the app still works: PDF and MP4 export are disabled, with an explanation.
 
 ## Folders
 
@@ -175,7 +188,10 @@ shotboard/
     commands/    undoable commands
     camera/      lens math, keyframe interpolation, moves
     shared/      project types + defaults
-  server/        Python export helper
+  src/export/    frame renderer and the three exports
+  src/persist/   .shotboard file format, save/open, autosave
+  src/platform/  desktop (Electron IPC) vs browser differences
+  server/        Python export helper (FastAPI, ReportLab, Pillow, ffmpeg) + pytest tests
   assets/        sample props and textures
   samples/       sample project
   scripts/       setup scripts
